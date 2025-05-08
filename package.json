@@ -12,7 +12,7 @@
     "test": "jest --watchAll",
     "coverage": "jest --coverage",
     "storybook-generate": "sb-rn-get-stories",
-    "prepare": "husky install"
+    "prepare": "cd .. && husky chatrak-gpt/.husky"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -55,6 +55,12 @@
       "@/assets/(.*)$": "<rootDir>/assets/$1",
       "^@/(.*)$": "<rootDir>/$1"
     }
+  },
+  "lint-staged": {
+    "./*.{js,ts,tsx}": [
+      "prettier --write",
+      "eslint"
+    ]
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
