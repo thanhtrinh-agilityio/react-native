@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import { DevSettings } from 'react-native';
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -6,15 +9,30 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+const storybookEnabled = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === "true";
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [showStorybook, setShowStorybook] = useState(false);
+
+
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
+  useEffect(() => {
+    if (!loaded) return;
+    if (__DEV__ && loaded) {
+      DevSettings.addMenuItem?.('Toggle Storybook', () => {
+        setShowStorybook((prev) => !prev);
+      });
+    }
+  }, [loaded]);
+
+
+  if (showStorybook && storybookEnabled && __DEV__) {
+    const StorybookUIRoot = require('../.storybook/').default;
+    return <StorybookUIRoot />;
   }
 
   return (

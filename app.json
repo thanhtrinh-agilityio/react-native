@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "chatRAK-GPT",
-    "slug": "chatRAK-GPT",
+    "name": "Rak-GPT",
+    "slug": "rak-gpt",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -13,10 +13,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/react-logo@2x.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.thanh.trinhagilityo.rakgpt"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "24927fa9-514a-4db3-8f78-53a16c20e451"
+      }
+    },
+    "owner": "thanh.trinh-agilityo"
   }
 }
