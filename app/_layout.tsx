@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react';
 import { DevSettings } from 'react-native';
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider } from '@rneui/themed';
+
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { theme } from '@/theme/index';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+
 
 const storybookEnabled = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === "true";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [showStorybook, setShowStorybook] = useState(false);
 
+  
+
+  const [showStorybook, setShowStorybook] = useState(false);
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -36,7 +41,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider theme={theme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
