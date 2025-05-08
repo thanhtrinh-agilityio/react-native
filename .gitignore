@@ -29,7 +29,7 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
-
+coverage
 # local env files
 .env*.local
 
