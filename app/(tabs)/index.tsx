@@ -1,11 +1,12 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
+import { CustomButton } from '@/components/Button';
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
+import { TextBlock } from '@/components/Text';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { TextBlock } from '@/components/Text';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Platform, StyleSheet } from 'react-native';
 
 export default function HomeScreen() {
   return (
@@ -19,8 +20,10 @@ export default function HomeScreen() {
       }>
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
-        <TextBlock h1 type="primary"> Heading 1 </TextBlock>
+        <TextBlock h1 type="primary" variant='success'> Heading 1 </TextBlock>
         <HelloWave />
+
+
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
@@ -39,6 +42,54 @@ export default function HomeScreen() {
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 2: Explore</ThemedText>
+        <CustomButton
+          iconName="arrow-right"
+          iconType="feather"
+          iconSize={40}
+          ViewComponent={LinearGradient}
+          linearGradientProps={{
+            colors: ['#3EAEFF', '#B659FF', '#0300A6'],
+            start: { x: 0, y: 0 },
+            end: { x: 1, y: 1 },
+            locations: [0, 0.495, 1],
+          }}
+          buttonStyle={
+            {
+              width: 80,
+              height: 80
+            }
+          }
+          containerStyle={
+            {
+              width: 80,
+              height: 80
+            }
+          }
+          radius={100}
+        />
+        <CustomButton
+          title="Continue"
+          iconName="arrow-right"
+          iconType="feather"
+        />
+
+        <CustomButton
+          title="Continue with email"
+          iconName="mail"
+          iconType="feather"
+          iconPosition='left'
+          type='outline'
+        />
+
+        <CustomButton
+          title="Continue with email"
+          iconName="mail"
+          iconType="feather"
+          iconPosition='left'
+          type='clear'
+        />
+
+
         <ThemedText>
           {`Tap the Explore tab to learn more about what's included in this starter app.`}
         </ThemedText>

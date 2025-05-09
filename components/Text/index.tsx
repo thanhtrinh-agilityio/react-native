@@ -2,16 +2,17 @@ import { Text, TextProps } from '@rneui/themed';
 import React from 'react';
 import { TextStyle } from 'react-native';
 
-
 // hooks
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { TextType, TextVariant } from '@/types/text';
 
-type TextVariant = 'default' | 'defaultSemiBold' | 'title' | 'subtitle' | 'link' | 'primary';
+
 
 interface TextBlockProps extends TextProps {
   lightColor?: string;
   darkColor?: string;
-  type?: TextVariant;
+  type?: TextType;
+  variant?: TextVariant;
 }
 
 export const TextBlock = ({
@@ -19,11 +20,12 @@ export const TextBlock = ({
   lightColor,
   darkColor,
   type = 'default',
+  variant,
   ...rest
 }: TextBlockProps) => {
   const color = useThemeColor(
     { light: lightColor, dark: darkColor },
-    type === 'primary' ? 'primary' : 'text'
+    variant ?? (type === 'primary' ? 'primary' : 'text')
   );
 
   return (
@@ -36,9 +38,9 @@ export const TextBlock = ({
       {...rest}
     />
   );
-}
+};
 
-const styles: Record<TextVariant, TextStyle> = {
+const styles: Record<TextType, TextStyle> = {
   default: {
     fontSize: 16,
     fontWeight: '400',
