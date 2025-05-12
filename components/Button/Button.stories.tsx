@@ -1,9 +1,9 @@
-import { ButtonBlock } from '@/components/Button';
 import type { Meta, StoryObj } from '@storybook/react';
+import { CustomButton } from '.';
 
-const meta: Meta<typeof ButtonBlock> = {
+const meta: Meta<typeof CustomButton> = {
   title: 'Components/ButtonBlock',
-  component: ButtonBlock,
+  component: CustomButton,
   args: {
     title: 'Click Me',
   },
@@ -11,7 +11,7 @@ const meta: Meta<typeof ButtonBlock> = {
 
 export default meta;
 
-type Story = StoryObj<typeof ButtonBlock>;
+type Story = StoryObj<typeof CustomButton>;
 
 export const Solid: Story = {
   args: {

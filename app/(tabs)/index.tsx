@@ -1,14 +1,34 @@
 import { CustomButton } from '@/components/Button';
 import { HelloWave } from '@/components/HelloWave';
+import { TextInput } from '@/components/Input';
+import { SuggestInput } from '@/components/Input/SuggestInput';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { TextBlock } from '@/components/Text';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 
 export default function HomeScreen() {
+  const [inputValue, setInputValue] = useState('');
+  const getRandomColor = () =>
+    '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+
+  const responseSuggestions = ['AI', 'Machine Learning', 'Blockchain'];
+
+  const suggestions = responseSuggestions.map((label) => {
+    const color = getRandomColor();
+    return {
+      label,
+      color,
+      borderColor: color,
+    };
+  });
+
+
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -93,6 +113,41 @@ export default function HomeScreen() {
         <ThemedText>
           {`Tap the Explore tab to learn more about what's included in this starter app.`}
         </ThemedText>
+
+        <TextInput
+          label="Email"
+          placeholder="Enter your email"
+          leftIconType="feather"
+          leftIconName="mail"
+          value={''}
+        // onChangeText={setEmail}
+        />
+
+        <TextInput
+          label="Password"
+          placeholder="Create strong password"
+          leftIconType="feather"
+          leftIconName="lock"
+          rightIconType="feather"
+          rightIconName={"eye-off"}
+
+        // secureTextEntry={!showPassword}
+        // value={password}
+        // onChangeText={setPassword}
+        // onRightIconPress={() => setShowPassword(!showPassword)}
+        />
+        <TextInput
+          placeholder="design a web page"
+          variant="plain"
+        />
+        <SuggestInput
+          suggestions={suggestions}
+          value={inputValue}
+          onChangeText={setInputValue}
+          onSuggestionPress={(label) => {
+            setInputValue((prev) => prev + label);
+          }}
+        />
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
@@ -117,6 +172,8 @@ const styles = StyleSheet.create({
   stepContainer: {
     gap: 8,
     marginBottom: 8,
+    backgroundColor: "#F5F5F6"
+
   },
   reactLogo: {
     height: 178,

@@ -1,17 +1,14 @@
-import { Button, ButtonProps, Icon } from '@rneui/themed';
+import { Button, Icon } from '@rneui/themed';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
 // constants
 import { Colors } from '@/constants/Colors';
 
-interface ButtonCustomProps extends ButtonProps {
-  iconName?: string;
-  iconType?: string;
-  iconSize?: number;
-  type?: 'solid' | 'outline' | 'clear';
-  onPress?: () => void;
-}
+// types
+import { ButtonCustomProps } from '@/types';
+
+
 
 export const CustomButton = ({
   iconName,
