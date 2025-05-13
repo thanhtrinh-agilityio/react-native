@@ -1,9 +1,10 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
 
 import { PromptCard } from '../PromptCard';
 
 const { width } = Dimensions.get('window');
+const ITEM_WIDTH = width * 0.6;
 
 type PromptData = {
   id: string;
@@ -16,7 +17,7 @@ type PromptData = {
 
 type PromptCardListProps = {
   data: PromptData[];
-  onGetAnswer?: (id: string) => void;
+  onGetAnswer?: (item: PromptData) => void;
   onEditPrompt?: (id: string) => void;
 };
 
@@ -25,39 +26,49 @@ export const PromptCards = ({
   onGetAnswer,
   onEditPrompt,
 }: PromptCardListProps) => {
+  const renderItem = useCallback(({ item }: { item: PromptData }) => {
+    const { id, title, description, iconName, iconType, colorCard } = item;
+    return (
+      <View style={styles.itemWrapper}>
+        <PromptCard
+          title={title}
+          description={description}
+          iconName={iconName}
+          iconType={iconType}
+          colorCard={colorCard}
+          onGetAnswer={() => onGetAnswer?.(item)}
+          onEditPrompt={() => onEditPrompt?.(id)}
+        />
+      </View>
+    );
+  }, [onEditPrompt, onGetAnswer]);
+
   return (
     <FlatList
       data={data}
       keyExtractor={(item) => item.id}
       horizontal
       showsHorizontalScrollIndicator={false}
-      snapToAlignment="center"
+      snapToInterval={ITEM_WIDTH}
       decelerationRate="fast"
-      contentContainerStyle={styles.listContainer}
-      renderItem={({ item }) => (
-        <View style={styles.itemWrapper}>
-          <PromptCard
-            title={item.title}
-            description={item.description}
-            iconName={item.iconName}
-            iconType={item.iconType}
-            colorCard={item.colorCard}
-            onGetAnswer={() => onGetAnswer?.(item.id)}
-            onEditPrompt={() => onEditPrompt?.(item.id)}
-          />
-        </View>
-      )}
+      snapToAlignment="center"
+      contentContainerStyle={{
+        alignItems: 'center',
+        marginBottom: 16,
+      }}
+      renderItem={renderItem}
+      getItemLayout={(_, index) => ({
+        length: ITEM_WIDTH,
+        offset: ITEM_WIDTH * index,
+        index,
+      })}
     />
   );
 };
 
 const styles = StyleSheet.create({
-  listContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   itemWrapper: {
-    width: width * 0.6,
+    width: ITEM_WIDTH,
   },
 });
 

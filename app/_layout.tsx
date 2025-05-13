@@ -1,24 +1,17 @@
+import { ThemeProvider } from '@rneui/themed';
+import { useFonts } from 'expo-font';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { DevSettings } from 'react-native';
-
-import { ThemeProvider } from '@rneui/themed';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+
+// themes
+import DrawerNavigator from '@/navigation/DrawerNavigator';
 import { theme } from '@/theme/index';
-
-
 
 const storybookEnabled = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === "true";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
-  
-
   const [showStorybook, setShowStorybook] = useState(false);
 
   const [loaded] = useFonts({
@@ -42,11 +35,8 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
+      <DrawerNavigator />
+      <StatusBar translucent />
     </ThemeProvider>
   );
 }

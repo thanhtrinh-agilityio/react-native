@@ -8,7 +8,6 @@ import { TextBlock } from '@/components/Text';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { PROMPT_LIST } from '@/mocks';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
@@ -29,18 +28,10 @@ export default function HomeScreen() {
     };
   });
 
-
-
-
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
+      headerBackgroundColor={{ light: 'red', dark: 'black' }}
+    >
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <TextBlock h1 type="primary" variant='success'> Heading 1 </TextBlock>
@@ -178,8 +169,6 @@ const styles = StyleSheet.create({
   stepContainer: {
     gap: 8,
     marginBottom: 8,
-    backgroundColor: "#F5F5F6"
-
   },
   reactLogo: {
     height: 178,

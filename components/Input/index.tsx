@@ -1,4 +1,4 @@
-import { Icon, Input } from '@rneui/themed';
+import { Icon, Image, Input } from '@rneui/themed';
 import React, { memo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -17,6 +17,7 @@ const InputComponent = ({
   onRightIconPress,
   variant = 'default',
   inputContainerStyle,
+  image,
   ...rest
 }: TextInputProps) => {
   const isPlain = variant === 'plain';
@@ -33,6 +34,11 @@ const InputComponent = ({
             name={leftIconName}
             size={20}
             color={Colors['light'].icon}
+          />
+        ) : image ? (
+          <Image
+            source={{ uri: image }}
+            style={{ width: 24, height: 24, resizeMode: 'contain' }}
           />
         ) : undefined
       }
@@ -79,11 +85,11 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     color: Colors['light'].textInput,
+    width: '100%',
   },
   inputContainerPlain: {
     borderRadius: 24,
     borderColor: "#fff",
-    minHeight: 56,
     paddingHorizontal: 20,
   },
   inputContainerFocused: {
@@ -95,6 +101,7 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 16,
     paddingLeft: 0,
+    width: '100%',
   },
   inputPlain: {
     fontSize: 16,
