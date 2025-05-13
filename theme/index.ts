@@ -6,7 +6,7 @@ export const theme = createTheme({
   darkColors: Colors.dark,
   components: {
     Button: {
-      raised: true,
+      raised: false,
     },
   },
 });

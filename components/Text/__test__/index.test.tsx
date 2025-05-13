@@ -29,7 +29,7 @@ describe('TextBlock Component', () => {
 
     const textElement = getByText('Test Default');
     expect(textElement).toBeTruthy();
-    expect(textElement).toHaveStyle({ fontSize: 16, fontWeight: '400', color: 'black' });
+    expect(textElement).toHaveStyle({ fontSize: 13, fontWeight: '400', color: 'black' });
   });
 
   it('renders correctly with primary type', () => {

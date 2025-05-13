@@ -1,5 +1,5 @@
 import { Icon, Input } from '@rneui/themed';
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 // themes
@@ -9,7 +9,7 @@ import { Colors } from '@/constants/Colors';
 import { TextInputProps } from '@/types';
 
 
-export const TextInput = ({
+const InputComponent = ({
   leftIconType,
   leftIconName,
   rightIconType,
@@ -105,3 +105,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+export const TextInput = memo(InputComponent);

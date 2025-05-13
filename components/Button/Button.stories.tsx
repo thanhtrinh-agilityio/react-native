@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { CustomButton } from '.';
+import { BaseButton } from '.';
 
-const meta: Meta<typeof CustomButton> = {
+const meta: Meta<typeof BaseButton> = {
   title: 'Components/ButtonBlock',
-  component: CustomButton,
+  component: BaseButton,
   args: {
     title: 'Click Me',
   },
@@ -11,7 +11,7 @@ const meta: Meta<typeof CustomButton> = {
 
 export default meta;
 
-type Story = StoryObj<typeof CustomButton>;
+type Story = StoryObj<typeof BaseButton>;
 
 export const Solid: Story = {
   args: {
@@ -43,7 +43,7 @@ export const WithoutIcon: Story = {
 export const CustomRadiusAndSize: Story = {
   args: {
     radius: 20,
-    iconSize: 30,
+    iconSize: 20,
     iconName: 'settings',
   },
 };

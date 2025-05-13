@@ -5,5 +5,6 @@ export type ButtonCustomProps = ButtonProps & {
   iconType?: string;
   iconSize?: number;
   type?: 'solid' | 'outline' | 'clear';
+  titleColorOutline?: string;
   onPress?: () => void;
 };

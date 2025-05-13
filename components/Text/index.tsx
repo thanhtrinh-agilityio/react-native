@@ -1,21 +1,13 @@
-import { Text, TextProps } from '@rneui/themed';
-import React from 'react';
+import { Text } from '@rneui/themed';
+import React, { memo } from 'react';
 import { TextStyle } from 'react-native';
 
 // hooks
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { TextType, TextVariant } from '@/types/text';
+import { TextBlockProps, TextType } from '@/types/text';
 
 
-
-interface TextBlockProps extends TextProps {
-  lightColor?: string;
-  darkColor?: string;
-  type?: TextType;
-  variant?: TextVariant;
-}
-
-export const TextBlock = ({
+const TextComponent = ({
   style,
   lightColor,
   darkColor,
@@ -42,12 +34,12 @@ export const TextBlock = ({
 
 const styles: Record<TextType, TextStyle> = {
   default: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '400',
   },
   defaultSemiBold: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   title: {
     fontSize: 24,
@@ -67,3 +59,5 @@ const styles: Record<TextType, TextStyle> = {
     fontSize: 16,
   },
 };
+
+export const TextBlock = memo(TextComponent);
