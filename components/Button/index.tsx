@@ -1,5 +1,5 @@
 import { Button, Icon } from '@rneui/themed';
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet } from 'react-native';
 
 // constants
@@ -10,12 +10,15 @@ import { ButtonCustomProps } from '@/types';
 
 
 
-export const CustomButton = ({
+const ButtonBlock = ({
   iconName,
   iconType = 'material',
   type = 'solid',
   radius = 12,
   iconSize = 20,
+  titleColorOutline = Colors.light.primary,
+  containerStyle,
+  buttonStyle,
   ...rest
 }: ButtonCustomProps) => {
   const isSolid = type === 'solid';
@@ -36,12 +39,15 @@ export const CustomButton = ({
       }
       buttonStyle={[
         styles.button,
-        isSolid ? undefined : type === 'outline' ? styles.outline : styles.clear,
+        isSolid ? undefined : type === 'outline' ? [styles.outline, { borderColor: titleColorOutline }] : styles.clear,
+        buttonStyle,
       ]}
-      containerStyle={[styles.container]}
+      containerStyle={[styles.container, containerStyle]}
       titleStyle={[
         styles.title,
-        isSolid ? styles.titleSolid : styles.titleOutline,
+        isSolid ? styles.titleSolid : {
+          color: titleColorOutline
+        },
       ]}
       radius={radius}
       {...rest}
@@ -51,16 +57,15 @@ export const CustomButton = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignContent: 'center'
+    width: '100%',
+    alignItems: 'center',
   },
   button: {
     width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    height: 40,
   },
   outline: {
-    borderColor: Colors.light.primary,
     borderWidth: 1,
   },
   clear: {
@@ -68,12 +73,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   titleSolid: {
-    color: 'white',
-  },
-  titleOutline: {
-    color: Colors.light.primary,
+    color: '#fff',
   },
 });
+
+export const BaseButton = memo(ButtonBlock);

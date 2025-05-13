@@ -1,11 +1,13 @@
-import { CustomButton } from '@/components/Button';
-import { HelloWave } from '@/components/HelloWave';
+import { PromptCard } from '@/components';
+import { BaseButton } from '@/components/Button';
 import { TextInput } from '@/components/Input';
 import { SuggestInput } from '@/components/Input/SuggestInput';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
+import { PromptCardList } from '@/components/PromptCardList';
 import { TextBlock } from '@/components/Text';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { PROMPT_LIST } from '@/mocks';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
@@ -29,6 +31,7 @@ export default function HomeScreen() {
 
 
 
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -41,8 +44,6 @@ export default function HomeScreen() {
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <TextBlock h1 type="primary" variant='success'> Heading 1 </TextBlock>
-        <HelloWave />
-
 
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
@@ -62,7 +63,7 @@ export default function HomeScreen() {
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <CustomButton
+        <BaseButton
           iconName="arrow-right"
           iconType="feather"
           iconSize={40}
@@ -87,13 +88,13 @@ export default function HomeScreen() {
           }
           radius={100}
         />
-        <CustomButton
+        <BaseButton
           title="Continue"
           iconName="arrow-right"
           iconType="feather"
         />
 
-        <CustomButton
+        <BaseButton
           title="Continue with email"
           iconName="mail"
           iconType="feather"
@@ -101,7 +102,7 @@ export default function HomeScreen() {
           type='outline'
         />
 
-        <CustomButton
+        <BaseButton
           title="Continue with email"
           iconName="mail"
           iconType="feather"
@@ -142,12 +143,17 @@ export default function HomeScreen() {
         />
         <SuggestInput
           suggestions={suggestions}
-          value={inputValue}
-          onChangeText={setInputValue}
           onSuggestionPress={(label) => {
             setInputValue((prev) => prev + label);
           }}
         />
+
+        <PromptCard
+          title="Try Fix Bug From Your Code"
+          description="Fix my bug from below code. I can’t find where is the issue. Do it in details and explain me why ha..."
+          colorCard='#ECDA1D'
+        />
+        <PromptCardList data={PROMPT_LIST} />
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
