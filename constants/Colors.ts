@@ -10,7 +10,7 @@ export const Colors = {
   light: {
     text: '#1f1e58',
     primary: '#5956fc',
-    background: '#fff',
+    background: '#f5f5f6',
     tint: tintColorLight,
     icon: '#9f9eb7',
     error: '#ff3b30',

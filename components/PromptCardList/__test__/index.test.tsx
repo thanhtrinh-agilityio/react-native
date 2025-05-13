@@ -34,7 +34,7 @@ describe('PromptCardList', () => {
     fireEvent.press(getAnswerButtons[0]);
     fireEvent.press(editPromptButtons[0]);
 
-    expect(onGetAnswer).toHaveBeenCalledWith('1');
-    expect(onEditPrompt).toHaveBeenCalledWith('1');
+    expect(onGetAnswer).toHaveBeenCalledWith(PROMPT_LIST[0]);
+    expect(onEditPrompt).toHaveBeenCalledWith(PROMPT_LIST[0].id);
   });
 });

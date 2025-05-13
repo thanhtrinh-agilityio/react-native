@@ -7,6 +7,7 @@ export type TextInputProps = InputProps & {
   rightIconName?: string;
   onRightIconPress?: () => void;
   variant?: 'default' | 'plain';
+  image?: string;
 };
 
 export type Suggestion = {
