@@ -36,24 +36,26 @@ const styles: Record<TextType, TextStyle> = {
   default: {
     fontSize: 13,
     fontWeight: '400',
+    lineHeight: 24,
+
   },
   defaultSemiBold: {
     fontSize: 16,
     fontWeight: '700',
+    lineHeight: 24,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
   },
   subtitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    opacity: 0.8,
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 26,
   },
   link: {
     fontSize: 16,
     fontWeight: '500',
-    textDecorationLine: 'underline',
   },
   primary: {
     fontSize: 16,

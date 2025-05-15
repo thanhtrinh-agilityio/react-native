@@ -1,4 +1,4 @@
-import { PromptCard } from '@/components';
+import { ChatInput, PromptCard } from '@/components';
 import { BaseButton } from '@/components/Button';
 import { TextInput } from '@/components/Input';
 import { SuggestInput } from '@/components/Input/SuggestInput';
@@ -145,6 +145,7 @@ export default function HomeScreen() {
           colorCard='#ECDA1D'
         />
         <PromptCardList data={PROMPT_LIST} />
+        <ChatInput />
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>

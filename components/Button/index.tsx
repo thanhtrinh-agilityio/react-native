@@ -33,7 +33,11 @@ const ButtonBlock = ({
             type={iconType}
             size={iconSize}
             color={isSolid ? '#fff' : Colors.light.primary}
-            style={{ marginRight: 8 }}
+            {...rest.title && ({
+              style: {
+                marginRight: 5,
+              },
+            })}
           />
         ) : undefined
       }
@@ -57,13 +61,13 @@ const ButtonBlock = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
     alignItems: 'center',
+    width: '100%',
   },
   button: {
     width: '100%',
     alignItems: 'center',
-    height: 40,
+    minHeight: 32,
   },
   outline: {
     borderWidth: 1,

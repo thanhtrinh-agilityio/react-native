@@ -42,7 +42,6 @@ const DrawerNavigator = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
       <Drawer
-        initialRouteName="index"
         drawerContent={renderDrawerContent}
         screenOptions={screenOptions}
       >

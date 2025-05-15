@@ -4,7 +4,7 @@ import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
 import { PromptCard } from '../PromptCard';
 
 const { width } = Dimensions.get('window');
-const ITEM_WIDTH = width * 0.6;
+const ITEM_WIDTH = width * 0.4;
 
 type PromptData = {
   id: string;
@@ -49,7 +49,6 @@ export const PromptCards = ({
       keyExtractor={(item) => item.id}
       horizontal
       showsHorizontalScrollIndicator={false}
-      snapToInterval={ITEM_WIDTH}
       decelerationRate="fast"
       snapToAlignment="center"
       contentContainerStyle={{
