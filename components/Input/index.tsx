@@ -18,10 +18,13 @@ const InputComponent = ({
   variant = 'default',
   inputContainerStyle,
   image,
+  rightIcon,
+  errorMessage,
   ...rest
 }: TextInputProps) => {
   const isPlain = variant === 'plain';
   const [isFocused, setIsFocused] = useState(false);
+  const isError = typeof errorMessage === 'string' && !!errorMessage;
 
   return (
     <Input
@@ -52,26 +55,33 @@ const InputComponent = ({
             onPress={onRightIconPress}
             color={Colors['light'].icon}
           />
-        ) : undefined
+        ) : rightIcon
       }
       inputContainerStyle={[
         styles.inputContainer,
         isFocused && styles.inputContainerFocused,
         isPlain && styles.inputContainerPlain,
-        rest.errorMessage && styles.inputContainerError,
+        isError && styles.inputContainerError,
         inputContainerStyle
       ]}
+      containerStyle={styles.container}
       inputStyle={[
         styles.input,
         isPlain && styles.inputPlain,
       ]}
       labelStyle={[styles.label, {
-        ...rest.errorMessage && { color: Colors.light.error }
+        ...isError && { color: Colors.light.error }
       }]}
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => setIsFocused(false)}
+      errorMessage={errorMessage}
+      onFocus={(e) => {
+        setIsFocused(true);
+        rest?.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setIsFocused(false);
+        rest?.onBlur?.(e);
+      }}
       selectionColor={Colors['light'].primary}
-
     />
   );
 };
@@ -92,6 +102,10 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     paddingHorizontal: 20,
   },
+  container: {
+    width: '100%',
+    paddingHorizontal: 0,
+  },
   inputContainerFocused: {
     borderColor: Colors.light.borderInput,
   },
@@ -101,7 +115,6 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 16,
     paddingLeft: 0,
-    width: '100%',
   },
   inputPlain: {
     fontSize: 16,

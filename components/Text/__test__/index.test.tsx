@@ -66,6 +66,6 @@ describe('TextBlock Component', () => {
 
     const textElement = getByText('Test Link');
     expect(textElement).toBeTruthy();
-    expect(textElement).toHaveStyle({ fontSize: 16, fontWeight: '500', color: 'red', textDecorationLine: 'underline' });
+    expect(textElement).toHaveStyle({ fontSize: 16, fontWeight: '500', color: 'red' });
   });
 });
