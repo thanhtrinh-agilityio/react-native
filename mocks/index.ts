@@ -33,3 +33,20 @@ export const PROMPT_LIST = [
     colorCard: '#F5A623',
   },
 ];
+
+export const SLIDES = [
+  {
+    key: 'start',
+    title: 'Start Free\nConversation',
+    iconName: 'arrow-right',
+    description:
+      'No login required for get started chat with our AI powered chatbot. \nFeel free to ask what you want to know.',
+  },
+  {
+    key: 'voice',
+    title: 'Leave Your\nVoice Instantly',
+    iconName: 'image',
+    description:
+      'No login is required to start chatting with our AI-powered chatbot.\nFeel free to ask what you want to know.',
+  },
+];

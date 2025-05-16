@@ -1,31 +1,41 @@
-import { BaseButton, TextBlock } from '@/components';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 
-const slides = [
-  {
-    key: 'start',
-    title: 'Start Free\nConversation',
-    iconName: 'arrow-right',
-    description:
-      'No login required for get started chat with our AI powered chatbot. \nFeel free to ask what you want to know.',
-  },
-  {
-    key: 'voice',
-    title: 'Leave Your\nVoice Instantly',
-    iconName: 'image',
-    description:
-      'No login is required to start chatting with our AI-powered chatbot.\nFeel free to ask what you want to know.',
-  },
-];
+// Components
+import { BaseButton, TextBlock } from '@/components';
+
+// Mocks
+import { SLIDES } from '@/mocks';
+
+// Services
+import { useGoogleSignIn } from '@/services/authService';
 
 const OnboardingScreen = () => {
   const carouselRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [carouselWidth, setCarouselWidth] = useState<number | null>(null);
+  const { request, promptAsync } = useGoogleSignIn();
+
+  // New loading state
+  const [loading, setLoading] = useState(false);
+
+  const handleLoginWithGoogle = async () => {
+    if (!request) {
+      console.error('Google Sign-In request is not available');
+      return;
+    }
+    try {
+      setLoading(true);
+      await promptAsync();
+    } catch (error) {
+      console.error('Google Sign-In error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderSlide = ({ item }) => (
     <View style={[styles.containerContent]}>
@@ -61,17 +71,14 @@ const OnboardingScreen = () => {
         }}
       >
         <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/images/logo-hoz.png')}
-            style={styles.logo}
-          />
+          <Image source={require('../assets/images/logo-hoz.png')} style={styles.logo} />
         </View>
 
         {carouselWidth !== null && (
           <Carousel
             ref={carouselRef}
             width={carouselWidth}
-            data={slides}
+            data={SLIDES}
             autoPlay
             loop
             scrollAnimationDuration={2000}
@@ -84,13 +91,15 @@ const OnboardingScreen = () => {
 
       <View style={styles.buttonContainer}>
         <BaseButton
-          title="Continue with Google"
-          iconName="google"
+          title={loading ? 'Signing in...' : 'Continue with Google'}
+          iconName={loading ? undefined : 'google'}
           iconType="material-community"
           iconPosition="left"
           iconSize={18}
           containerStyle={{ width: '100%' }}
           size="lg"
+          onPress={handleLoginWithGoogle}
+          disabled={loading || !request}
         />
         <BaseButton
           title="Sign up with email"
@@ -162,8 +171,8 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     marginTop: 50,
-    borderWidth: 1
-  }
+    borderWidth: 1,
+  },
 });
 
 export default OnboardingScreen;

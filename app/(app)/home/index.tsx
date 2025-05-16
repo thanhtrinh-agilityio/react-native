@@ -8,6 +8,7 @@ import { TextBlock } from '@/components/Text';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { PROMPT_LIST } from '@/mocks';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
@@ -78,6 +79,9 @@ export default function HomeScreen() {
             }
           }
           radius={100}
+          onPress={() => {
+            AsyncStorage.removeItem()
+          }}
         />
         <BaseButton
           title="Continue"

@@ -12,6 +12,7 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "jest.setup.js"
+    "jest.setup.js",
+    "app/firebaseConfig.js"
   ]
 }
