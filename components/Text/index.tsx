@@ -34,13 +34,13 @@ const TextComponent = ({
 
 const styles: Record<TextType, TextStyle> = {
   default: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '400',
     lineHeight: 24,
 
   },
   defaultSemiBold: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     lineHeight: 24,
   },
