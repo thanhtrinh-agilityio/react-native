@@ -1,25 +1,13 @@
 import React, { memo, useCallback } from 'react';
 import { Dimensions, FlatList, StyleSheet, View } from 'react-native';
 
+import { PromptCardListProps, PromptData } from '@/types';
 import { PromptCard } from '../PromptCard';
 
 const { width } = Dimensions.get('window');
-const ITEM_WIDTH = width * 0.4;
+const ITEM_WIDTH = width * 0.8;
 
-type PromptData = {
-  id: string;
-  title: string;
-  description: string;
-  iconName?: string;
-  iconType?: string;
-  colorCard?: string;
-};
 
-type PromptCardListProps = {
-  data: PromptData[];
-  onGetAnswer?: (item: PromptData) => void;
-  onEditPrompt?: (id: string) => void;
-};
 
 export const PromptCards = ({
   data,

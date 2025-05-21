@@ -5,21 +5,25 @@ import {
   Animated,
   Easing,
   StyleSheet,
-  View,
+  View
 } from 'react-native';
+
 
 // Components
 import { BaseButton, TextInput } from '@/components';
-import { MESSAGE } from '@/constants/Message';
+import { MESSAGE } from '@/constants/message';
 
 type ChatInputProps = {
   loading?: boolean;
+  message?: string;
+  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  onSend: (message: string, image?: string) => void;
 };
 
-export const ChatInput = ({ loading = true }: ChatInputProps) => {
-  const [message, setMessage] = useState('');
+export const ChatInput = ({ loading = true, message = '', setMessage, onSend }: ChatInputProps) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const placeholderAnim = useRef(new Animated.Value(0)).current;
+  const [image, setImage] = useState('');
 
   useEffect(() => {
     Animated.loop(
@@ -61,15 +65,14 @@ export const ChatInput = ({ loading = true }: ChatInputProps) => {
     });
 
     if (!result.canceled) {
-      console.log('Image selected:', result.assets[0].uri);
+      setImage(result.assets[0].uri);
     }
   };
 
   const handleSend = useCallback(() => {
-    if (!message.trim()) return;
-    console.log('Sending:', message);
-    setMessage('');
-  }, [message]);
+    onSend(message, image);
+    setImage('');
+  }, [image, message, onSend]);
 
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -118,8 +121,8 @@ export const ChatInput = ({ loading = true }: ChatInputProps) => {
             value={message}
             editable={!loading}
             onChangeText={setMessage}
-            onSubmitEditing={handleSend}
             variant="plain"
+            image={image}
             {...(loading && { rightIcon: renderLoading() })}
           />
         </View>
@@ -150,6 +153,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignSelf: 'center',
     justifyContent: 'center',
+    gap: 10,
     flex: 1,
     width: '100%',
     paddingHorizontal: 10,

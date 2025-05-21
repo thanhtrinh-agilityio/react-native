@@ -2,8 +2,10 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { Icon, Image } from '@rneui/themed';
+import { router } from 'expo-router';
+import { getAuth } from 'firebase/auth';
 import React, { memo, useCallback, useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { BaseButton } from 'react-native-gesture-handler';
 
 // components
@@ -12,7 +14,15 @@ import { TextBlock } from '../../Text';
 
 // constants
 import { Colors } from '@/constants/Colors';
+
+// Hooks
 import useDebounce from '@/hooks/useDebounce';
+
+// Services
+import { logout } from '@/services/authService';
+
+// Utils
+import { generateAvatarUrl, getNameFromEmail } from '@/utils';
 
 const recentChats = [
   'Web Page Design - CSS/HTML/...',
@@ -28,6 +38,10 @@ const CustomDrawerContent = ({ navigation }) => {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const [historyChats, setHistoryChats] = useState(recentChats);
+
+  const user = getAuth().currentUser;
+  const displayName = getNameFromEmail(user?.email || '');
+  const avatarUri = user?.photoURL || generateAvatarUrl(displayName);
 
   useEffect(() => {
     if (debouncedSearchTerm) {
@@ -48,8 +62,13 @@ const CustomDrawerContent = ({ navigation }) => {
   }, [navigation]);
 
   // handle logout
-  const handleLogout = useCallback(() => {
-
+  const handleLogout = useCallback(async () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [{ text: 'Cancel' }, {
+      text: 'Logout', onPress: async () => {
+        router.replace('/welcome');
+        await logout()
+      }
+    }]);
   }, [])
 
   const renderRecentItem = useCallback(({ item }) => (
@@ -106,10 +125,13 @@ const CustomDrawerContent = ({ navigation }) => {
       <View style={styles.footer}>
         <View style={styles.profileContainer}>
           <Image
-            source={{ uri: 'https://i.pravatar.cc/100?img=3' }}
+            source={{ uri: avatarUri }}
             style={styles.avatar}
           />
-          <TextBlock type='defaultSemiBold'>Wow Rakibul</TextBlock>
+          <View style={{ width: 180 }}>
+            <TextBlock type='defaultSemiBold' numberOfLines={1} ellipsizeMode="tail"
+            >{displayName}</TextBlock>
+          </View>
         </View>
         <BaseButton style={styles.logoutButton} onPress={handleLogout}>
           <Icon name="poweroff" type="antdesign" size={18} color="#FF4C4C" />

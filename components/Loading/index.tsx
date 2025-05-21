@@ -1,13 +1,17 @@
 import { Colors } from '@/constants/Colors';
+import { useLoading } from '@/contexts/LoadingContext';
 import React from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
 
+
 export default function LoadingOverlay({ visible = false, text = "Loading..." }) {
+  const { isLoading } = useLoading();
+
   return (
     <Modal
       transparent
       animationType="fade"
-      visible={visible}
+      visible={isLoading || visible}
       statusBarTranslucent
     >
       <View style={styles.overlay}>
@@ -23,7 +27,7 @@ export default function LoadingOverlay({ visible = false, text = "Loading..." })
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: Colors.light.background,
     justifyContent: 'center',
     alignItems: 'center',
   },

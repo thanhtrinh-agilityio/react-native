@@ -15,3 +15,10 @@ export type Suggestion = {
   color: string;
   borderColor: string;
 };
+
+export type ParsedMessage = {
+  text: string;
+  isCode?: boolean;
+  language?: string;
+  fileName?: string;
+};

@@ -1,5 +1,6 @@
 import { CheckBox, Icon } from '@rneui/themed';
 import { router } from 'expo-router';
+import { FirebaseError } from 'firebase/app';
 import React, { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -15,10 +16,11 @@ import { BaseButton, TextBlock, TextInput } from '@/components';
 
 // Constants
 import { Colors } from '@/constants/Colors';
-import { MESSAGE, MESSAGE_ERROR } from '@/constants/Message';
+import { MESSAGE, MESSAGE_ERROR } from '@/constants/message';
 
 // Services
 import { signUpWithEmail } from '@/services/authService';
+import { formatFirebaseAuthError } from '@/utils';
 import Toast from 'react-native-toast-message';
 
 type FormData = {
@@ -56,7 +58,7 @@ const SignUpScreen = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error instanceof Error ? error.message : 'An unknown error occurred',
+        text2: (error as FirebaseError).code ? formatFirebaseAuthError((error as FirebaseError).code) : 'An unknown error occurred',
       });
     } finally {
       setLoading(false);

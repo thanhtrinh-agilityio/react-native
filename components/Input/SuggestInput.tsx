@@ -20,36 +20,35 @@ export const SuggestInput: React.FC<SuggestInputProps> = ({
 }) => {
 
   return (
-    <>
-      <View style={styles.wrapper}>
-        <View style={styles.suggestRow}>
-          {suggestions.map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              style={[
-                styles.suggestBtn,
-                { borderColor: item.borderColor }
-              ]}
-              onPress={() => onSuggestionPress(item.label)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.suggestText, { color: item.color }]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+    <View style={styles.wrapper}>
+      <View style={styles.suggestRow}>
+        {suggestions.map((item) => (
+          <TouchableOpacity
+            key={item.label}
+            style={[
+              styles.suggestBtn,
+              { borderColor: item.borderColor }
+            ]}
+            onPress={() => onSuggestionPress(item.label)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.suggestText, { color: item.color }]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   wrapper: {
-    width: '100%',
     padding: 16,
     borderRadius: 32,
     backgroundColor: '#fff',
+    marginHorizontal: 16,
+    minHeight: 40,
   },
   suggestRow: {
     flexDirection: 'row',

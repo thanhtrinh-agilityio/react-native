@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "chatrakgpt",
+    "scheme": "com.thanh.trinhagilityo.rakgpt",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -18,7 +18,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.thanh.trinhagilityo.rakgpt",
-      "googleServicesFile": "./android/app/google-services.json"
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -50,7 +50,8 @@
       "router": {},
       "eas": {
         "projectId": "24927fa9-514a-4db3-8f78-53a16c20e451"
-      }
+      },
+      "googleClientIdAndroid": "609133469559-frvdmu164eh0m8dp06t8hfcj7bka98sa.apps.googleusercontent.com"
     },
     "owner": "thanh.trinh-agilityo"
   }
