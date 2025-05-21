@@ -9,7 +9,10 @@ import 'react-native-reanimated';
 import { DrawerContent } from '@/components/ui/DrawerContent';
 
 // Themes
-import { theme } from '@/theme';
+import { BaseButton } from '@/components';
+import { Colors, ROUTES } from '@/constants';
+import { router } from 'expo-router';
+import { getAuth } from 'firebase/auth';
 
 type DrawerType = 'slide' | 'front' | 'back' | 'permanent';
 interface RouteParams {
@@ -17,18 +20,28 @@ interface RouteParams {
 }
 
 const DrawerNavigator = () => {
+  const user = getAuth().currentUser;
   const renderDrawerContent = useCallback((props) => <DrawerContent {...props} />, []);
-
   const HeaderRight = useCallback(() => (
-    <View style={styles.iconContainer}>
+    user ? <View style={styles.iconContainer}>
       <Icon
         name="dots-three-vertical"
         type="entypo"
         color="#000"
         size={20}
       />
-    </View>
-  ), []);
+    </View> : (
+      <BaseButton
+        title="Login"
+        accessibilityLabel="Login"
+        onPress={() => {
+          router.replace(ROUTES.SIGN_IN);
+        }}
+        size='sm'
+        containerStyle={styles.loginButton}
+      />
+    )
+  ), [user]);
 
 
   const screenOptions = useMemo(() => ({
@@ -44,6 +57,7 @@ const DrawerNavigator = () => {
       <Drawer
         drawerContent={renderDrawerContent}
         screenOptions={screenOptions}
+        backBehavior="initialRoute"
       >
         <Drawer.Screen
           name="index"
@@ -67,10 +81,10 @@ const styles = StyleSheet.create({
   },
   drawer: {
     width: 293,
-    backgroundColor: theme.lightColors?.background,
+    backgroundColor: Colors.light?.background,
   },
   header: {
-    backgroundColor: theme.lightColors?.background,
+    backgroundColor: Colors.light?.background,
     borderBottomWidth: 0,
     elevation: 0,
     shadowOpacity: 0,
@@ -83,6 +97,10 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginRight: 10,
   },
+  loginButton: {
+    paddingRight: 10,
+    width: 80
+  }
 });
 
 export default DrawerNavigator;

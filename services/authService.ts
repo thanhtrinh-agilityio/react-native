@@ -1,20 +1,20 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
 import {
   createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithCredential,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { useEffect } from 'react';
 
-// Firebase
-import { ACCESS_TOKEN_KEY, USER_EMAIL_KEY } from '@/constants/Key';
+// Constants
+import {
+  ACCESS_TOKEN_KEY,
+  EXPO_ANDROID_CLIENT_ID,
+  USER_EMAIL_KEY,
+} from '@/constants';
+
+// firebase
 import { firebaseAuth } from '@/firebaseConfig';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-WebBrowser.maybeCompleteAuthSession();
 
 export const signUpWithEmail = async (email: string, password: string) => {
   try {
@@ -44,30 +44,14 @@ export const signInWithEmail = async (email: string, password: string) => {
 
 export const useGoogleSignIn = () => {
   const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId:
-      '609133469559-6ojam3dmhot2mqfhjk2lcrim8cebdft1.apps.googleusercontent.com',
-    iosClientId: '',
-    webClientId:
-      '609133469559-5fpksfghs4iggqhivcgpl296btga9crq.apps.googleusercontent.com',
-    redirectUri: AuthSession.makeRedirectUri({}),
-    scopes: ['profile', 'email'],
+    androidClientId: EXPO_ANDROID_CLIENT_ID,
+    scopes: ['openid', 'profile', 'email'],
+    redirectUri: AuthSession.makeRedirectUri(),
+    responseType: 'code',
+    usePKCE: true,
   });
 
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.authentication;
-      const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(firebaseAuth, credential)
-        .then((userCred) => {
-          console.log('Google sign-in success:', userCred.user);
-        })
-        .catch((error) => {
-          console.error('Firebase sign-in error:', error);
-        });
-    }
-  }, [response]);
-
-  return { request, promptAsync };
+  return { request, response, promptAsync };
 };
 
 export const logout = async () => {

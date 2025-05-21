@@ -1,26 +1,29 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Icon } from '@rneui/base';
 import { CheckBox } from '@rneui/themed';
+import * as AuthSession from 'expo-auth-session';
+import { router } from 'expo-router';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  ActivityIndicator,
-  Modal,
   ScrollView,
   StyleSheet,
   View
 } from 'react-native';
-// Components
-import { BaseButton, TextBlock, TextInput } from '@/components';
-import { Colors } from '@/constants/Colors';
-import { ACCESS_TOKEN_KEY, USER_EMAIL_KEY } from '@/constants/Key';
-import { MESSAGE, MESSAGE_ERROR } from '@/constants/Message';
-import { signInWithEmail } from '@/services/authService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Icon } from '@rneui/base';
-import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
 
+// Components
+import { BaseButton, TextBlock, TextInput } from '@/components';
 
 // Constants
+import { ACCESS_TOKEN_KEY, Colors, EXPO_ANDROID_CLIENT_ID, MESSAGE, MESSAGE_ERROR, ROUTES } from '@/constants';
+
+// Services
+import { useLoading } from '@/contexts/LoadingContext';
+import { firebaseAuth } from '@/firebaseConfig';
+import { signInWithEmail, useGoogleSignIn } from '@/services/authService';
+import { loadUserChatHistory, saveUserChatHistory, saveUserInfo } from '@/utils';
 
 type FormData = {
   email: string;
@@ -40,9 +43,12 @@ export default function LoginScreen() {
       remember: false,
     },
   });
-
+  const { request, promptAsync } = useGoogleSignIn();
+  const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
   const [secureText, setSecureText] = useState(true);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
+  const { isLoading, setLoading } = useLoading();
+
 
   const onSubmit = async (data: FormData) => {
     const { email, password } = data;
@@ -50,16 +56,33 @@ export default function LoginScreen() {
     try {
       const userCredential = await signInWithEmail(email, password);
       const token = await userCredential.user.getIdToken();
+      await saveUserInfo(userCredential.user);
+
+      let chatHistory = await loadUserChatHistory(userCredential?.user?.email!);
+
+      if (!chatHistory || chatHistory.length === 0) {
+        chatHistory = [];
+        await saveUserChatHistory(userCredential.user.email!, chatHistory);
+      }
 
       await AsyncStorage.setItem(ACCESS_TOKEN_KEY, token);
-      await AsyncStorage.setItem(USER_EMAIL_KEY, userCredential.user.email ?? '');
+
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Login with Google successfully',
+      })
+
+      router.replace(ROUTES.HOME);
+
 
       Toast.show({
         type: 'success',
         text1: 'Success',
         text2: MESSAGE.LOGIN_SUCCESS,
       });
-      router.replace('/home');
+      router.replace(ROUTES.HOME);
     } catch (error) {
       Toast.show({
         type: 'error',
@@ -67,6 +90,62 @@ export default function LoginScreen() {
         text2: error instanceof Error ? error.message : 'An unknown error occurred',
       });
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoginWithGoogle = async () => {
+    if (!request) return;
+    try {
+      const res = await promptAsync();
+      if (res.type === 'success' && res.params.code) {
+        const { code } = res.params;
+        setLoading(true);
+
+        const tokens = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: EXPO_ANDROID_CLIENT_ID,
+            code,
+            redirectUri: AuthSession.makeRedirectUri({
+              scheme: 'com.thanh.trinhagilityo.rakgpt',
+            }),
+            extraParams: {
+              code_verifier: request.codeVerifier || '',
+            },
+          },
+          discovery!
+        );
+
+        const credential = GoogleAuthProvider.credential(tokens?.idToken);
+        const result = await signInWithCredential(firebaseAuth, credential);
+        if (result?.user) {
+          await saveUserInfo(result.user);
+
+          let chatHistory = await loadUserChatHistory(result?.user?.email!);
+
+          if (!chatHistory || chatHistory.length === 0) {
+            chatHistory = [];
+            await saveUserChatHistory(result.user.email!, chatHistory);
+          }
+
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'Login with Google successfully',
+          })
+
+          router.replace(ROUTES.HOME);
+        }
+        setLoading(false);
+      }
+
+    } catch (err) {
+      console.error('[GoogleSignIn] error:', err);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Login with Google failed',
+      })
       setLoading(false);
     }
   };
@@ -167,7 +246,7 @@ export default function LoginScreen() {
 
           <View style={styles.containerButtonLogin}>
             <BaseButton title="Login" onPress={handleSubmit(onSubmit)} size='lg'
-              disabled={loading} />
+              disabled={isLoading} />
 
             <TextBlock style={styles.orText}>Or sign in with using</TextBlock>
 
@@ -180,8 +259,8 @@ export default function LoginScreen() {
               containerStyle={{ width: '100%' }}
               size="lg"
               type='outline'
-            // onPress={handleLoginWithGoogle}
-            // disabled={loading || !request}
+              onPress={handleLoginWithGoogle}
+              disabled={isLoading || !request}
             />
             <TextBlock style={styles.signup}>
               Don’t have an account? <TextBlock type='defaultSemiBold' variant='primary' onPress={() => router.navigate('/sign-up')}>Create an account</TextBlock>
@@ -189,12 +268,6 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
-      {/* Full-screen Loading Overlay */}
-      <Modal visible={loading} transparent animationType="fade">
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={Colors.light.tint} />
-        </View>
-      </Modal>
     </>
 
   );

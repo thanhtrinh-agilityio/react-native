@@ -1,9 +1,11 @@
+import * as AuthSession from 'expo-auth-session';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
-
+import Toast from 'react-native-toast-message';
 // Components
 import { BaseButton, TextBlock } from '@/components';
 
@@ -11,7 +13,18 @@ import { BaseButton, TextBlock } from '@/components';
 import { SLIDES } from '@/mocks';
 
 // Services
+
+// Constants
+import { EXPO_ANDROID_CLIENT_ID, ROUTES } from '@/constants';
+
+
+// Services
+import { useLoading } from '@/contexts/LoadingContext';
+import { firebaseAuth } from '@/firebaseConfig';
 import { useGoogleSignIn } from '@/services/authService';
+import { loadUserChatHistory, saveUserChatHistory, saveUserInfo } from '@/utils';
+
+
 
 const OnboardingScreen = () => {
   const carouselRef = useRef(null);
@@ -19,23 +32,68 @@ const OnboardingScreen = () => {
   const [carouselWidth, setCarouselWidth] = useState<number | null>(null);
   const { request, promptAsync } = useGoogleSignIn();
 
+  const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+
   // New loading state
-  const [loading, setLoading] = useState(false);
+  const { isLoading, setLoading } = useLoading();
 
   const handleLoginWithGoogle = async () => {
-    if (!request) {
-      console.error('Google Sign-In request is not available');
-      return;
-    }
+    if (!request) return;
     try {
-      setLoading(true);
-      await promptAsync();
-    } catch (error) {
-      console.error('Google Sign-In error:', error);
-    } finally {
+      const res = await promptAsync();
+      if (res.type === 'success' && res.params.code) {
+        const { code } = res.params;
+        setLoading(true);
+
+        const tokens = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: EXPO_ANDROID_CLIENT_ID,
+            code,
+            redirectUri: AuthSession.makeRedirectUri({
+              scheme: 'com.thanh.trinhagilityo.rakgpt',
+            }),
+            extraParams: {
+              code_verifier: request.codeVerifier || '',
+            },
+          },
+          discovery!
+        );
+
+        const credential = GoogleAuthProvider.credential(tokens?.idToken);
+        const result = await signInWithCredential(firebaseAuth, credential);
+        if (result?.user) {
+
+          await saveUserInfo(result.user);
+
+          let chatHistory = await loadUserChatHistory(result?.user?.email!);
+
+          if (!chatHistory || chatHistory.length === 0) {
+            chatHistory = [];
+            await saveUserChatHistory(result.user.email!, chatHistory);
+          }
+
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'Login with Google successfully',
+          })
+
+          router.replace(ROUTES.HOME);
+        }
+        setLoading(false);
+      }
+
+    } catch (err) {
+      console.error('[GoogleSignIn] error:', err);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Login with Google failed',
+      })
       setLoading(false);
     }
   };
+
 
   const renderSlide = ({ item }) => (
     <View style={[styles.containerContent]}>
@@ -57,6 +115,9 @@ const OnboardingScreen = () => {
         }}
         buttonStyle={styles.buttonIcon}
         radius={100}
+        onPress={() => {
+          router.replace(ROUTES.HOME);
+        }}
       />
     </View>
   );
@@ -91,15 +152,15 @@ const OnboardingScreen = () => {
 
       <View style={styles.buttonContainer}>
         <BaseButton
-          title={loading ? 'Signing in...' : 'Continue with Google'}
-          iconName={loading ? undefined : 'google'}
+          title={isLoading ? 'Signing in...' : 'Continue with Google'}
+          iconName={isLoading ? undefined : 'google'}
           iconType="material-community"
           iconPosition="left"
           iconSize={18}
           containerStyle={{ width: '100%' }}
           size="lg"
           onPress={handleLoginWithGoogle}
-          disabled={loading || !request}
+          disabled={isLoading}
         />
         <BaseButton
           title="Sign up with email"
@@ -172,6 +233,12 @@ const styles = StyleSheet.create({
     height: 80,
     marginTop: 50,
     borderWidth: 1,
+  },
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

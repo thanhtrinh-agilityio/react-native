@@ -13,7 +13,7 @@ export default function Index() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async currentUser => {
-      setUser(null);
+      setUser(currentUser);
       setInitializing(false);
     });
 
