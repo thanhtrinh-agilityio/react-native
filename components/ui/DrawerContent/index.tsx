@@ -41,6 +41,8 @@ export const DrawerContent = ({ navigation }) => {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const [historyChats, setHistoryChats] = useState<ChatThread[]>([]);
+  const [allChatsHistory, setAllChatsHistory] = useState<ChatThread[]>([]);
+
   const drawerStatus = useDrawerStatus();
 
   const user = getAuth().currentUser;
@@ -58,6 +60,7 @@ export const DrawerContent = ({ navigation }) => {
         text: thread.firstMessage?.text ?? '',
       }));
       setHistoryChats(recentHistoryChat);
+      setAllChatsHistory(recentHistoryChat);
     })();
   }, [drawerStatus, user?.email]);
 
@@ -68,16 +71,19 @@ export const DrawerContent = ({ navigation }) => {
   }, [debouncedSearchTerm]);
 
   // handle search
-  const handleChangeSearch = useCallback((value: string) => {
-    setSearch(value);
-    setHistoryChats((prevState) =>
-      value
-        ? prevState.filter((item) =>
-            item.text.toLowerCase().includes(value.toLowerCase()),
-          )
-        : historyChats,
-    );
-  }, []);
+  const handleChangeSearch = useCallback(
+    (value: string) => {
+      setSearch(value);
+      setHistoryChats((prevState) =>
+        value
+          ? prevState.filter((item) =>
+              item.text.toLowerCase().includes(value.toLowerCase()),
+            )
+          : allChatsHistory,
+      );
+    },
+    [allChatsHistory],
+  );
 
   // handle chat press and navigation
   const handleChatPress = useCallback(
