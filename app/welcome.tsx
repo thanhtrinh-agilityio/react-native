@@ -1,11 +1,13 @@
 import * as AuthSession from 'expo-auth-session';
 import { LinearGradient } from 'expo-linear-gradient';
+import { uuid } from 'expo-modules-core';
 import { router } from 'expo-router';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import Toast from 'react-native-toast-message';
+
 // Components
 import { BaseButton, TextBlock } from '@/components';
 
@@ -17,14 +19,10 @@ import { SLIDES } from '@/mocks';
 // Constants
 import { EXPO_ANDROID_CLIENT_ID, ROUTES } from '@/constants';
 
-
 // Services
 import { useLoading } from '@/contexts/LoadingContext';
 import { firebaseAuth } from '@/firebaseConfig';
 import { useGoogleSignIn } from '@/services/authService';
-import { loadUserChatHistory, saveUserChatHistory, saveUserInfo } from '@/utils';
-
-
 
 const OnboardingScreen = () => {
   const carouselRef = useRef(null);
@@ -40,6 +38,7 @@ const OnboardingScreen = () => {
   const handleLoginWithGoogle = async () => {
     if (!request) return;
     try {
+      const id = uuid.v4().toString();
       const res = await promptAsync();
       if (res.type === 'success' && res.params.code) {
         const { code } = res.params;
@@ -56,48 +55,46 @@ const OnboardingScreen = () => {
               code_verifier: request.codeVerifier || '',
             },
           },
-          discovery!
+          discovery!,
         );
 
         const credential = GoogleAuthProvider.credential(tokens?.idToken);
         const result = await signInWithCredential(firebaseAuth, credential);
+
         if (result?.user) {
-
-          await saveUserInfo(result.user);
-
-          let chatHistory = await loadUserChatHistory(result?.user?.email!);
-
-          if (!chatHistory || chatHistory.length === 0) {
-            chatHistory = [];
-            await saveUserChatHistory(result.user.email!, chatHistory);
-          }
+          router.replace({
+            pathname: ROUTES.HOME,
+            params: { threadId: id },
+          });
 
           Toast.show({
             type: 'success',
             text1: 'Success',
             text2: 'Login with Google successfully',
-          })
-
-          router.replace(ROUTES.HOME);
+          });
         }
         setLoading(false);
       }
-
     } catch (err) {
       console.error('[GoogleSignIn] error:', err);
       Toast.show({
         type: 'error',
         text1: 'Error',
         text2: 'Login with Google failed',
-      })
+      });
       setLoading(false);
     }
   };
 
-
   const renderSlide = ({ item }) => (
     <View style={[styles.containerContent]}>
-      <TextBlock type="title" h1 numberOfLines={2} adjustsFontSizeToFit allowFontScaling>
+      <TextBlock
+        type="title"
+        h1
+        numberOfLines={2}
+        adjustsFontSizeToFit
+        allowFontScaling
+      >
         {item.title}
       </TextBlock>
       <TextBlock type="subtitle">{item.description}</TextBlock>
@@ -132,7 +129,10 @@ const OnboardingScreen = () => {
         }}
       >
         <View style={styles.logoContainer}>
-          <Image source={require('../assets/images/logo-hoz.png')} style={styles.logo} />
+          <Image
+            source={require('../assets/images/logo-hoz.png')}
+            style={styles.logo}
+          />
         </View>
 
         {carouselWidth !== null && (

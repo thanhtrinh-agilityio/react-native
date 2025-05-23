@@ -1,13 +1,7 @@
 import { Icon } from '@rneui/themed';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  StyleSheet,
-  View
-} from 'react-native';
-
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 // Components
 import { BaseButton, TextInput } from '@/components';
@@ -20,35 +14,48 @@ type ChatInputProps = {
   onSend: (message: string, image?: string) => void;
 };
 
-export const ChatInput = ({ loading = true, message = '', setMessage, onSend }: ChatInputProps) => {
+export const ChatInput = ({
+  loading = true,
+  message = '',
+  setMessage,
+  onSend,
+}: ChatInputProps) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const placeholderAnim = useRef(new Animated.Value(0)).current;
   const [image, setImage] = useState('');
 
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, [rotateAnim]);
+    let rotateAnimation: Animated.CompositeAnimation | null = null;
 
-  useEffect(() => {
     if (loading) {
+      rotateAnim.setValue(0);
+      rotateAnimation = Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      );
+      rotateAnimation.start();
+
+      placeholderAnim.setValue(0);
       Animated.loop(
         Animated.timing(placeholderAnim, {
           toValue: 1,
           duration: 1500,
           easing: Easing.linear,
           useNativeDriver: true,
-        })
+        }),
       ).start();
     } else {
-      placeholderAnim.stopAnimation();
+      rotateAnim.stopAnimation(() => rotateAnim.setValue(0));
+      placeholderAnim.stopAnimation(() => placeholderAnim.setValue(0));
     }
+
+    return () => {
+      rotateAnimation?.stop();
+    };
   }, [loading]);
 
   const placeholderOpacity = placeholderAnim.interpolate({
@@ -85,7 +92,7 @@ export const ChatInput = ({ loading = true, message = '', setMessage, onSend }: 
         <Icon name="hourglass-outline" type="ionicon" />
       </Animated.View>
     );
-  }, []);
+  }, [rotate]);
 
   return (
     <View style={styles.container}>
@@ -106,7 +113,7 @@ export const ChatInput = ({ loading = true, message = '', setMessage, onSend }: 
               style={{
                 position: 'absolute',
                 left: 32,
-                top: 14,
+                top: 45,
                 color: '#aaa',
                 opacity: placeholderOpacity,
                 zIndex: 1,
@@ -116,13 +123,18 @@ export const ChatInput = ({ loading = true, message = '', setMessage, onSend }: 
             </Animated.Text>
           )}
           <TextInput
-            placeholder={!loading ? MESSAGE.PLACE_HOLDER_CHAT : ""}
+            placeholder={!loading ? MESSAGE.PLACE_HOLDER_CHAT : ''}
             disabled={loading}
             value={message}
             editable={!loading}
             onChangeText={setMessage}
             variant="plain"
             image={image}
+            multiline
+            numberOfLines={4}
+            inputContainerStyle={{
+              marginTop: 30,
+            }}
             {...(loading && { rightIcon: renderLoading() })}
           />
         </View>
@@ -132,7 +144,9 @@ export const ChatInput = ({ loading = true, message = '', setMessage, onSend }: 
       {loading ? (
         <BaseButton
           onPress={handleSend}
-          icon={<Icon name="stop-outline" type="ionicon" color="white" size={18} />}
+          icon={
+            <Icon name="stop-outline" type="ionicon" color="white" size={18} />
+          }
           buttonStyle={styles.sendButton}
           containerStyle={styles.sendButton}
         />
@@ -151,12 +165,11 @@ export const ChatInput = ({ loading = true, message = '', setMessage, onSend }: 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignSelf: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     gap: 10,
-    flex: 1,
     width: '100%',
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
   },
   iconButton: {
     width: 52,

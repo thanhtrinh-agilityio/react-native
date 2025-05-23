@@ -1,9 +1,14 @@
 import { ThemeProvider } from '@rneui/themed';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Slot } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { DevSettings, StatusBar } from 'react-native';
+import { DevSettings, Platform, StatusBar } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  KeyboardProvider,
+} from 'react-native-keyboard-controller';
 import Toast from 'react-native-toast-message';
 
 // Components
@@ -15,11 +20,15 @@ import LoadingOverlay from '@/components/Loading';
 import { LoadingProvider } from '@/contexts/LoadingContext';
 
 // Theme
+import { Colors } from '@/constants';
+import { initDatabase } from '@/db';
 import { theme } from '@/theme/index';
 
 const storybookEnabled = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
 
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [showStorybook, setShowStorybook] = useState(false);
@@ -30,6 +39,9 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    initDatabase().then((e) => {
+      console.log('Database initialized', e);
+    });
     async function prepare() {
       if (!loaded) return;
 
@@ -60,13 +72,23 @@ export default function RootLayout() {
   }
 
   return (
-    <LoadingProvider>
-      <ThemeProvider theme={theme}>
-        <StatusBar barStyle="dark-content" />
-        <Slot />
-        <Toast />
-        <LoadingOverlay />
-      </ThemeProvider>
-    </LoadingProvider>
+    <QueryClientProvider client={queryClient}>
+      <KeyboardProvider>
+        <LoadingProvider>
+          <ThemeProvider theme={theme}>
+            <KeyboardAvoidingView
+              behavior={'padding'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+              style={{ flex: 1, backgroundColor: Colors.light.background }}
+            >
+              <StatusBar translucent barStyle="dark-content" />
+              <Slot />
+              <Toast />
+              <LoadingOverlay />
+            </KeyboardAvoidingView>
+          </ThemeProvider>
+        </LoadingProvider>
+      </KeyboardProvider>
+    </QueryClientProvider>
   );
 }

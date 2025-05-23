@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import {
@@ -7,11 +6,7 @@ import {
 } from 'firebase/auth';
 
 // Constants
-import {
-  ACCESS_TOKEN_KEY,
-  EXPO_ANDROID_CLIENT_ID,
-  USER_EMAIL_KEY,
-} from '@/constants';
+import { EXPO_ANDROID_CLIENT_ID } from '@/constants';
 
 // firebase
 import { firebaseAuth } from '@/firebaseConfig';
@@ -57,16 +52,7 @@ export const useGoogleSignIn = () => {
 export const logout = async () => {
   try {
     await firebaseAuth.signOut();
-    await AsyncStorage.multiRemove([ACCESS_TOKEN_KEY, USER_EMAIL_KEY]);
   } catch (error) {
     console.error('Logout error:', error);
   }
-};
-
-export const getStoredToken = async () => {
-  return await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
-};
-
-export const getStoredEmail = async () => {
-  return await AsyncStorage.getItem(USER_EMAIL_KEY);
 };

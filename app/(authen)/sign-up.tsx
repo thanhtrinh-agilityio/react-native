@@ -8,20 +8,21 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  View
+  View,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 // Components
 import { BaseButton, TextBlock, TextInput } from '@/components';
 
 // Constants
+import { ROUTES } from '@/constants';
 import { Colors } from '@/constants/Colors';
 import { MESSAGE, MESSAGE_ERROR } from '@/constants/message';
 
 // Services
 import { signUpWithEmail } from '@/services/authService';
 import { formatFirebaseAuthError } from '@/utils';
-import Toast from 'react-native-toast-message';
 
 type FormData = {
   email: string;
@@ -30,7 +31,11 @@ type FormData = {
 };
 
 const SignUpScreen = () => {
-  const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
     defaultValues: {
       email: '',
       password: '',
@@ -53,12 +58,14 @@ const SignUpScreen = () => {
         text1: 'Success',
         text2: MESSAGE.CREATED_ACCOUNT_SUCCESS,
       });
-      router.replace('/sign-in');
+      router.replace(ROUTES.SIGN_IN);
     } catch (error) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: (error as FirebaseError).code ? formatFirebaseAuthError((error as FirebaseError).code) : 'An unknown error occurred',
+        text2: (error as FirebaseError).code
+          ? formatFirebaseAuthError((error as FirebaseError).code)
+          : 'An unknown error occurred',
       });
     } finally {
       setLoading(false);
@@ -72,10 +79,15 @@ const SignUpScreen = () => {
 
   return (
     <>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
-          <TextBlock type='title' h4>Create an account</TextBlock>
-          <TextBlock type='subtitle' style={styles.subtitle}>
+          <TextBlock type="title" h4>
+            Create an account
+          </TextBlock>
+          <TextBlock type="subtitle" style={styles.subtitle}>
             Sign for a free account. Get easier than search engines results.
           </TextBlock>
 
@@ -85,14 +97,17 @@ const SignUpScreen = () => {
               name="email"
               rules={{
                 required: MESSAGE_ERROR.REQUIRED,
-                pattern: { value: /^\S+@\S+\.\S+$/, message: MESSAGE_ERROR.INVALID_EMAIL }
+                pattern: {
+                  value: /^\S+@\S+\.\S+$/,
+                  message: MESSAGE_ERROR.INVALID_EMAIL,
+                },
               }}
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
                   label="Email"
                   placeholder="Enter your email"
-                  leftIconName='mail-outline'
-                  leftIconType='ionicon'
+                  leftIconName="mail-outline"
+                  leftIconType="ionicon"
                   value={value}
                   onBlur={onBlur}
                   onChangeText={onChange}
@@ -108,8 +123,8 @@ const SignUpScreen = () => {
                 required: MESSAGE_ERROR.REQUIRED,
                 minLength: {
                   value: 8,
-                  message: MESSAGE_ERROR.INVALID_PASSWORD
-                }
+                  message: MESSAGE_ERROR.INVALID_PASSWORD,
+                },
               }}
               render={({ field: { onChange, value, onBlur } }) => (
                 <>
@@ -117,22 +132,29 @@ const SignUpScreen = () => {
                     label="Password"
                     placeholder="Create strong password"
                     secureTextEntry={secureText}
-                    leftIconName='lock-closed-outline'
-                    leftIconType='ionicon'
+                    leftIconName="lock-closed-outline"
+                    leftIconType="ionicon"
                     rightIconName={secureText ? 'eye-off' : 'eye'}
-                    rightIconType='feather'
+                    rightIconType="feather"
                     value={value}
                     onBlur={onBlur}
                     onRightIconPress={() => setSecureText(!secureText)}
                     onChangeText={onChange}
                     errorMessage={
-                      errors.password?.message ? errors.password.message :
-                        (control._formValues.password || '').length >= 8 && (
-                          <View style={styles.strongPassword}>
-                            <Icon name='check-circle-outline' color={Colors.light.success} size={15} />
-                            <TextBlock variant='success'>{MESSAGE.STRONG_PASSWORD}</TextBlock>
-                          </View>
-                        )
+                      errors.password?.message
+                        ? errors.password.message
+                        : (control._formValues.password || '').length >= 8 && (
+                            <View style={styles.strongPassword}>
+                              <Icon
+                                name="check-circle-outline"
+                                color={Colors.light.success}
+                                size={15}
+                              />
+                              <TextBlock variant="success">
+                                {MESSAGE.STRONG_PASSWORD}
+                              </TextBlock>
+                            </View>
+                          )
                     }
                   />
                 </>
@@ -161,13 +183,15 @@ const SignUpScreen = () => {
             <BaseButton
               title="Create Account"
               onPress={handleSubmit(handleSubmitForm)}
-              size='lg'
+              size="lg"
               disabled={loading}
             />
 
             <View style={styles.loginLink}>
               <TextBlock>Already have an account?</TextBlock>
-              <TextBlock type='primary' onPress={handleNavigateLogin}>Login</TextBlock>
+              <TextBlock type="primary" onPress={handleNavigateLogin}>
+                Login
+              </TextBlock>
             </View>
           </View>
         </View>
