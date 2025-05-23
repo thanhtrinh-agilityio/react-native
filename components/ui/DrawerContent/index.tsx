@@ -1,10 +1,13 @@
-
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { DrawerContentScrollView } from '@react-navigation/drawer';
+import {
+  DrawerContentScrollView,
+  useDrawerStatus,
+} from '@react-navigation/drawer';
 import { Icon, Image } from '@rneui/themed';
+import { uuid } from 'expo-modules-core';
 import { router } from 'expo-router';
 import { getAuth } from 'firebase/auth';
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { BaseButton } from 'react-native-gesture-handler';
 
@@ -13,7 +16,6 @@ import { TextInput } from '@/components/Input';
 import { TextBlock } from '../../Text';
 
 // constants
-import { Colors } from '@/constants/Colors';
 
 // Hooks
 import useDebounce from '@/hooks/useDebounce';
@@ -24,74 +26,117 @@ import { logout } from '@/services/authService';
 // Utils
 import { generateAvatarUrl, getNameFromEmail } from '@/utils';
 
-const recentChats = [
-  'Web Page Design - CSS/HTML/...',
-  'AI Impact On UI/UX Design',
-  'React Native Animation',
-  'Navigation v6 Update',
-  'State Management Options',
-];
+// Database
+import { loadUserThreadsWithFirstMessage } from '@/db';
 
+// Types
+interface ChatThread {
+  id: string;
+  title: string;
+  text: string;
+}
 
-const CustomDrawerContent = ({ navigation }) => {
+export const DrawerContent = ({ navigation }) => {
   const [searchTerm, setSearch] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const [historyChats, setHistoryChats] = useState(recentChats);
+  const [historyChats, setHistoryChats] = useState<ChatThread[]>([]);
+  const drawerStatus = useDrawerStatus();
 
   const user = getAuth().currentUser;
   const displayName = getNameFromEmail(user?.email || '');
   const avatarUri = user?.photoURL || generateAvatarUrl(displayName);
+  useEffect(() => {
+    if (!user?.email) return;
+    if (drawerStatus !== 'open') return;
+
+    (async () => {
+      const list = await loadUserThreadsWithFirstMessage(user.email!);
+      const recentHistoryChat = list?.map((thread) => ({
+        id: thread.threadId,
+        title: thread.title,
+        text: thread.firstMessage?.text ?? '',
+      }));
+      setHistoryChats(recentHistoryChat);
+    })();
+  }, [drawerStatus, user?.email]);
 
   useEffect(() => {
     if (debouncedSearchTerm) {
-      setSearch(debouncedSearchTerm)
+      setSearch(debouncedSearchTerm);
     }
   }, [debouncedSearchTerm]);
-
 
   // handle search
   const handleChangeSearch = useCallback((value: string) => {
     setSearch(value);
-    setHistoryChats((prevState) => value ? prevState.filter((item) => item.toLowerCase().includes(value.toLowerCase())) : historyChats);
+    setHistoryChats((prevState) =>
+      value
+        ? prevState.filter((item) =>
+            item.text.toLowerCase().includes(value.toLowerCase()),
+          )
+        : historyChats,
+    );
   }, []);
 
   // handle chat press and navigation
-  const handleChatPress = useCallback((value: string) => {
-    navigation.navigate('index', { title: value });
-  }, [navigation]);
+  const handleChatPress = useCallback(
+    (item: ChatThread) => {
+      const { id, text } = item;
+      navigation.navigate('index', { threadId: id, title: text });
+    },
+    [navigation],
+  );
 
   // handle logout
   const handleLogout = useCallback(async () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [{ text: 'Cancel' }, {
-      text: 'Logout', onPress: async () => {
-        router.replace('/welcome');
-        await logout()
-      }
-    }]);
-  }, [])
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel' },
+      {
+        text: 'Logout',
+        onPress: async () => {
+          router.replace('/welcome');
+          await logout();
+        },
+      },
+    ]);
+  }, []);
 
-  const renderRecentItem = useCallback(({ item }) => (
-    <BaseButton style={styles.chatItem} onPress={() => handleChatPress(item)}>
-      <TextBlock numberOfLines={1} style={styles.chatText}>{item}</TextBlock>
-    </BaseButton >
-  ), [handleChatPress]);
+  // handle add new chat
+  const handleAddNewChat = useCallback(() => {
+    navigation.navigate('index', {
+      threadId: uuid.v4().toString(),
+      title: 'New Chat',
+      isNew: true,
+    });
+  }, [navigation]);
+
+  const renderRecentItem = useCallback(
+    ({ item }: { item: ChatThread }) => (
+      <BaseButton style={styles.chatItem} onPress={() => handleChatPress(item)}>
+        <TextBlock numberOfLines={1} style={styles.chatText}>
+          {item.text}
+        </TextBlock>
+      </BaseButton>
+    ),
+    [handleChatPress],
+  );
 
   return (
-    <DrawerContentScrollView contentContainerStyle={styles.container} >
-      <View >
+    <DrawerContentScrollView contentContainerStyle={styles.container}>
+      <View>
         <TextInput
           value={searchTerm}
           onChangeText={handleChangeSearch}
           placeholder="Search chat history..."
-          leftIconType='material'
-          leftIconName='search'
-          variant='plain'
+          leftIconType="material"
+          leftIconName="search"
+          variant="plain"
           inputContainerStyle={styles.searchInput}
         />
-        <BaseButton style={styles.menuItem} aria-disabled enabled={false}>
+        <BaseButton style={styles.menuItem} aria-disabled>
           <Ionicons name="chatbubble-ellipses-outline" size={20} />
-          <TextBlock type='defaultSemiBold'>Rak-GPT</TextBlock>
+          <TextBlock type="defaultSemiBold">Rak-GPT</TextBlock>
         </BaseButton>
 
         <BaseButton style={styles.menuItem} aria-disabled enabled={false}>
@@ -99,43 +144,52 @@ const CustomDrawerContent = ({ navigation }) => {
           <TextBlock style={styles.menuLabel}>Customize Feed</TextBlock>
         </BaseButton>
 
-        <BaseButton style={styles.menuItem} aria-disabled enabled={false}>
+        <BaseButton style={styles.menuItem} aria-disabled>
           <Feather name="globe" size={20} />
-          <TextBlock style={styles.menuLabel}>Community</TextBlock>
+          <TextBlock style={styles.menuLabel} onPress={handleAddNewChat}>
+            Community
+          </TextBlock>
         </BaseButton>
 
         <View style={styles.sectionDivider} />
-        {
-          historyChats.length > 0 && (
-            <>
-              <TextBlock style={styles.sectionTitle}>Recent Chats</TextBlock>
-              <FlatList
-                data={historyChats}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={renderRecentItem}
-                scrollEnabled={false}
-              />
-            </>
-
-          )
-        }
-
+        {historyChats?.length > 0 && (
+          <>
+            <TextBlock style={styles.sectionTitle}>Recent Chats</TextBlock>
+            <FlatList
+              data={historyChats}
+              keyExtractor={(item, index) => item.id.toString()}
+              renderItem={renderRecentItem}
+              scrollEnabled={false}
+            />
+          </>
+        )}
       </View>
       {/* Footer */}
       <View style={styles.footer}>
-        <View style={styles.profileContainer}>
-          <Image
-            source={{ uri: avatarUri }}
-            style={styles.avatar}
-          />
-          <View style={{ width: 180 }}>
-            <TextBlock type='defaultSemiBold' numberOfLines={1} ellipsizeMode="tail"
-            >{displayName}</TextBlock>
-          </View>
-        </View>
-        <BaseButton style={styles.logoutButton} onPress={handleLogout}>
-          <Icon name="poweroff" type="antdesign" size={18} color="#FF4C4C" />
-        </BaseButton>
+        {user && (
+          <>
+            <View style={styles.profileContainer}>
+              <Image source={{ uri: avatarUri }} style={styles.avatar} />
+              <View style={{ width: 180 }}>
+                <TextBlock
+                  type="defaultSemiBold"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {displayName}
+                </TextBlock>
+              </View>
+            </View>
+            <BaseButton style={styles.logoutButton} onPress={handleLogout}>
+              <Icon
+                name="poweroff"
+                type="antdesign"
+                size={18}
+                color="#FF4C4C"
+              />
+            </BaseButton>
+          </>
+        )}
       </View>
     </DrawerContentScrollView>
   );
@@ -143,14 +197,13 @@ const CustomDrawerContent = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.light.background,
     width: 293,
     flex: 1,
     justifyContent: 'space-between',
     paddingBottom: 20,
     borderColor: '#F7F7F8',
     borderWidth: 1,
-    marginVertical: 20
+    marginVertical: 20,
   },
   searchInput: {
     marginLeft: -10,
@@ -183,7 +236,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   footer: {
-    marginTop: 30,
+    marginTop: 50,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -212,5 +265,3 @@ const styles = StyleSheet.create({
     borderColor: '#FF612F7A',
   },
 });
-
-export const DrawerContent = memo(CustomDrawerContent);

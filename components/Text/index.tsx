@@ -6,7 +6,6 @@ import { TextStyle } from 'react-native';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { TextBlockProps, TextType } from '@/types/text';
 
-
 const TextComponent = ({
   style,
   lightColor,
@@ -17,19 +16,10 @@ const TextComponent = ({
 }: TextBlockProps) => {
   const color = useThemeColor(
     { light: lightColor, dark: darkColor },
-    variant ?? (type === 'primary' ? 'primary' : 'text')
+    variant ?? (type === 'primary' ? 'primary' : 'text'),
   );
 
-  return (
-    <Text
-      style={[
-        { color },
-        styles[type],
-        style,
-      ]}
-      {...rest}
-    />
-  );
+  return <Text style={[{ color }, styles[type], style]} {...rest} />;
 };
 
 const styles: Record<TextType, TextStyle> = {
@@ -37,7 +27,6 @@ const styles: Record<TextType, TextStyle> = {
     fontSize: 14,
     fontWeight: '400',
     lineHeight: 24,
-
   },
   defaultSemiBold: {
     fontSize: 14,

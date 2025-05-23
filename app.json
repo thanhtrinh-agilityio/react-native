@@ -41,7 +41,8 @@
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos"
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
