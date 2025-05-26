@@ -103,6 +103,8 @@ export const ChatInput = ({
         icon={<Icon name="image" type="feather" color="#6366f1" />}
         buttonStyle={styles.iconButton}
         containerStyle={styles.iconButton}
+        testID="upload-image-button"
+        aria-label="upload-image-button"
       />
 
       {/* Input Field */}
@@ -132,11 +134,10 @@ export const ChatInput = ({
             image={image}
             verticalAlign="middle"
             multiline
+            testID="chat-input"
             numberOfLines={4}
             inputContainerStyle={{
               marginTop: 30,
-              // flexGrow: 1,
-              // flexDirection: 'column',
             }}
             {...(loading && { rightIcon: renderLoading() })}
           />
@@ -146,12 +147,12 @@ export const ChatInput = ({
       {/* Send Button */}
       {loading ? (
         <BaseButton
-          onPress={handleSend}
           icon={
             <Icon name="stop-outline" type="ionicon" color="white" size={18} />
           }
           buttonStyle={styles.sendButton}
           containerStyle={styles.sendButton}
+          aria-label="stop-button"
         />
       ) : (
         <BaseButton
@@ -159,6 +160,7 @@ export const ChatInput = ({
           icon={<Icon name="send" type="feather" color="white" size={18} />}
           buttonStyle={styles.sendButton}
           containerStyle={styles.sendButton}
+          aria-label="send-button"
         />
       )}
     </View>
