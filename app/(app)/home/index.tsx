@@ -26,49 +26,53 @@ import { rainbow } from 'react-syntax-highlighter/styles/hljs';
 import { ChatInput, PromptCardList, TextBlock } from '@/components';
 import { useSendMessage } from '@/hooks/useSendMessage';
 import { MOCK_SUGGESTIONS, PROMPT_LIST } from '@/mocks';
-import { ParsedMessage, PromptData } from '@/types';
+import { IMessageWithParsedParts, ParsedMessage, PromptData } from '@/types';
 
 // Utils
 import { SuggestInput } from '@/components/Input/SuggestInput';
-import { Colors } from '@/constants';
-import { loadMessages, loadThreadIds, saveMessages } from '@/db';
+import { Colors, ROUTES } from '@/constants';
+import { loadMessages, saveMessages } from '@/db';
 import {
   buildOpenRouterMessages,
   convertToGiftedMessages,
   generateAvatarUrl,
   getNameFromEmail,
 } from '@/utils';
-import { uuid } from 'expo-modules-core';
-import { useGlobalSearchParams } from 'expo-router';
+import {
+  router,
+  useGlobalSearchParams,
+  useLocalSearchParams,
+} from 'expo-router';
 
 export default function ChatGPTScreen({ navigation }: any) {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [input, setInput] = useState('');
   const user = getAuth().currentUser;
   const { threadId: paramId, isNew } = useGlobalSearchParams();
+  const { threadId: uid } = useLocalSearchParams();
 
   const [threadId, setThreadId] = useState<string | null>(null);
 
   const { mutateAsync: sendMessage, isPending: isLoading } = useSendMessage();
   const disPlayName = user?.displayName || getNameFromEmail(user?.email || '');
-  const avatarUrl = user?.photoURL || generateAvatarUrl(disPlayName);
+  const avatarUrl = user?.photoURL || generateAvatarUrl(disPlayName || 'Guest');
 
   useEffect(() => {
     (async () => {
-      const threadIds = await loadThreadIds(user?.email!);
-      if (isNew || (!threadId && threadIds?.length === 0)) {
-        setThreadId(paramId ? (paramId as string) : uuid.v4().toString());
+      if (user) {
+        if ((isNew || !threadId) && uid) {
+          setThreadId(paramId ? (paramId as string) : (uid as string));
+        } else {
+          if (!user.email || isNew) return;
+          const msgs = await loadMessages((paramId as string) ?? threadId!);
+          setThreadId(paramId as string);
+          setMessages(msgs);
+        }
+      } else if (isNew && !user) {
         setMessages([]);
-      } else {
-        if (!user?.email || isNew) return;
-        const msgs = await loadMessages(
-          paramId ? paramId : threadIds[0]!.threadId,
-        );
-        setThreadId(paramId ? paramId : threadIds[0]!.threadId);
-        setMessages(msgs);
       }
     })();
-  }, [isNew, paramId, threadId, user?.email]);
+  }, [isNew, paramId, threadId, uid, user]);
 
   // handle send message
   const handleSendMessage = useCallback(
@@ -93,12 +97,21 @@ export default function ChatGPTScreen({ navigation }: any) {
 
       try {
         const payload = await buildOpenRouterMessages(trimmed, imageUri);
+        console.log('payload', payload);
+
         const reply = await sendMessage(payload);
+
         const replyMsgs = convertToGiftedMessages(reply);
         const messageUpdate = [...replyMsgs, userMsg];
-        await saveMessages(threadId!, user!.email!, messageUpdate);
-
+        user?.email! &&
+          (await saveMessages(threadId!, user!.email!, messageUpdate));
+        setThreadId(threadId);
         setMessages((prev) => GiftedChat.append(prev, replyMsgs));
+        messages.length === 0 &&
+          router.push({
+            pathname: ROUTES.HOME,
+            params: { threadId: threadId, title: trimmed },
+          });
       } catch (err: any) {
         Toast.show({
           type: 'error',
@@ -107,7 +120,7 @@ export default function ChatGPTScreen({ navigation }: any) {
         });
       }
     },
-    [disPlayName, avatarUrl, sendMessage, threadId, user],
+    [disPlayName, avatarUrl, sendMessage, user, threadId, messages.length],
   );
 
   const handleGetAnswer = async (item: PromptData) => {
@@ -122,89 +135,92 @@ export default function ChatGPTScreen({ navigation }: any) {
     </Send>
   );
 
-  const renderMessage = ({ currentMessage }: { currentMessage: any }) => {
-    const parts: ParsedMessage[] = currentMessage?.parsedParts || [
-      { text: currentMessage.text },
-    ];
-    const isBot = currentMessage.user._id === 2;
-    const avatarUri = isBot
-      ? 'https://avatar.iran.liara.run/public/username?background=random&username=Rak+GPT'
-      : currentMessage.user.avatar;
+  const renderMessage = useCallback(
+    ({ currentMessage }: { currentMessage: IMessageWithParsedParts }) => {
+      const parts: ParsedMessage[] = currentMessage?.parsedParts || [
+        { text: currentMessage.text },
+      ];
+      const isBot = currentMessage.user._id === 2;
+      const avatarUri = isBot
+        ? 'https://avatar.iran.liara.run/public/username?background=random&username=Rak+GPT'
+        : currentMessage.user.avatar;
 
-    return (
-      <View style={{ paddingHorizontal: 15, marginVertical: 2 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <GiftedAvatar
-            user={{ _id: currentMessage.user._id, avatar: avatarUri }}
-          />
-          <Text style={{ fontSize: 14, color: '#555', marginLeft: 8 }}>
-            {currentMessage.user.name || (isBot ? 'Rak-GPT' : 'User')}
-          </Text>
-        </View>
-
-        <View style={{ marginLeft: 40 }}>
-          {currentMessage.image && (
-            <Image
-              source={{ uri: currentMessage.image }}
-              style={{
-                width: 200,
-                height: 200,
-                borderRadius: 10,
-                marginVertical: 6,
-              }}
-              resizeMode="cover"
+      return (
+        <View style={{ paddingHorizontal: 15, marginVertical: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <GiftedAvatar
+              user={{ _id: currentMessage.user._id, avatar: avatarUri }}
             />
-          )}
+            <Text style={{ fontSize: 14, color: '#555', marginLeft: 8 }}>
+              {currentMessage.user.name || (isBot ? 'Rak-GPT' : 'User')}
+            </Text>
+          </View>
 
-          {parts?.map((part, index) =>
-            part.isCode ? (
-              <View key={index} style={styles.messageContainer}>
-                <View style={styles.headerRow}>
-                  <Text style={styles.languageLabel}>
-                    {part.language?.toUpperCase() || 'CODE'} (
-                    <Text style={styles.fileName}>
-                      {part.fileName || 'code.txt'}
+          <View style={{ marginLeft: 40 }}>
+            {currentMessage.image && (
+              <Image
+                source={{ uri: currentMessage.image }}
+                style={{
+                  width: 200,
+                  height: 200,
+                  borderRadius: 10,
+                  marginVertical: 6,
+                }}
+                resizeMode="cover"
+              />
+            )}
+
+            {parts?.map((part, index) =>
+              part.isCode ? (
+                <View key={index} style={styles.messageContainer}>
+                  <View style={styles.headerRow}>
+                    <Text style={styles.languageLabel}>
+                      {part.language?.toUpperCase() || 'CODE'} (
+                      <Text style={styles.fileName}>
+                        {part.fileName || 'code.txt'}
+                      </Text>
+                      )
                     </Text>
-                    )
-                  </Text>
-                  <TouchableOpacity
-                    onPress={async () => {
-                      await Clipboard.setString(part.text);
-                      Alert.alert('Copied!');
-                    }}
-                  >
-                    <Ionicons name="copy-outline" size={20} color="#333" />
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      onPress={async () => {
+                        await Clipboard.setString(part.text);
+                        Alert.alert('Copied!');
+                      }}
+                    >
+                      <Ionicons name="copy-outline" size={20} color="#333" />
+                    </TouchableOpacity>
+                  </View>
 
-                <ScrollView
-                  horizontal
-                  nestedScrollEnabled
-                  showsVerticalScrollIndicator
-                  style={{ borderRadius: 8, backgroundColor: '#f6f8fa' }}
-                >
-                  <SyntaxHighlighter
-                    language={part?.language || 'text'}
-                    style={rainbow}
-                    highlighter="hljs"
-                    customStyle={{ padding: 10, minWidth: 300 }}
-                    PreTag={Text}
-                    CodeTag={Text}
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    showsVerticalScrollIndicator
+                    style={{ borderRadius: 8, backgroundColor: '#f6f8fa' }}
                   >
-                    {part.text}
-                  </SyntaxHighlighter>
-                </ScrollView>
-              </View>
-            ) : (
-              <View key={index} style={[styles.message]}>
-                <Text>{part.text}</Text>
-              </View>
-            ),
-          )}
+                    <SyntaxHighlighter
+                      language={part?.language || 'text'}
+                      style={rainbow}
+                      highlighter="hljs"
+                      customStyle={{ padding: 10, minWidth: 300 }}
+                      PreTag={Text}
+                      CodeTag={Text}
+                    >
+                      {part.text}
+                    </SyntaxHighlighter>
+                  </ScrollView>
+                </View>
+              ) : (
+                <View key={index} style={[styles.message]}>
+                  <Text>{part.text}</Text>
+                </View>
+              ),
+            )}
+          </View>
         </View>
-      </View>
-    );
-  };
+      );
+    },
+    [],
+  );
 
   const renderLoading = useCallback(
     () => (
@@ -317,7 +333,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     paddingVertical: 0,
     alignItems: 'center',
     backgroundColor: Colors.light.background,

@@ -1,3 +1,4 @@
+import { ROUTES } from '@/constants';
 import { Icon } from '@rneui/themed';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback } from 'react';
@@ -11,7 +12,7 @@ export default function AuthLayout() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/welcome');
+      router.replace(ROUTES.WELCOME);
     }
   }, [router]);
 

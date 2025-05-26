@@ -48,15 +48,13 @@ export default function LoginScreen() {
   const { request, promptAsync } = useGoogleSignIn();
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
   const [secureText, setSecureText] = useState(true);
-  // const [loading, setLoading] = useState(false);
   const { isLoading, setLoading } = useLoading();
 
   const onSubmit = async (data: FormData) => {
     const { email, password } = data;
     setLoading(true);
     try {
-      const userCredential = await signInWithEmail(email, password);
-      const token = await userCredential.user.getIdToken();
+      await signInWithEmail(email, password);
 
       router.replace({
         pathname: ROUTES.HOME,
@@ -107,7 +105,7 @@ export default function LoginScreen() {
           Toast.show({
             type: 'success',
             text1: 'Success',
-            text2: 'Login with Google successfully',
+            text2: MESSAGE.LOGIN_SUCCESS_GOOGLE,
           });
 
           router.replace({
@@ -118,11 +116,10 @@ export default function LoginScreen() {
         setLoading(false);
       }
     } catch (err) {
-      console.error('[GoogleSignIn] error:', err);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Login with Google failed',
+        text2: err instanceof Error ? err.message : 'An unknown error occurred',
       });
       setLoading(false);
     }

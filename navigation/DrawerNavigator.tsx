@@ -1,6 +1,6 @@
 import { Icon } from '@rneui/themed';
 import { Drawer } from 'expo-router/drawer';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -11,7 +11,6 @@ import { DrawerContent } from '@/components/ui/DrawerContent';
 // Themes
 import { BaseButton } from '@/components';
 import { Colors, ROUTES } from '@/constants';
-import { loadUserThreadsWithFirstMessage } from '@/db';
 import { router } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 
@@ -23,16 +22,6 @@ interface RouteParams {
 
 const DrawerNavigator = () => {
   const user = getAuth().currentUser;
-  const [title, setTitle] = useState<string>('');
-
-  useEffect(() => {
-    if (!user?.email) return;
-
-    (async () => {
-      const list = await loadUserThreadsWithFirstMessage(user.email!);
-      list?.length && setTitle(list[0].firstMessage?.text);
-    })();
-  }, [user?.email]);
 
   const renderDrawerContent = useCallback(
     (props) => <DrawerContent {...props} />,
@@ -88,10 +77,11 @@ const DrawerNavigator = () => {
             title:
               user?.email &&
               !(route.params as RouteParams).isNew &&
-              !(route.params as RouteParams)?.title
-                ? title
-                : (route.params as RouteParams).title
-                ? (route.params as RouteParams)?.title
+              (route.params as RouteParams)?.title
+                ? (route.params as RouteParams).title
+                : (user?.email && !(route.params as RouteParams).isNew) ||
+                  (route.params as RouteParams).isNew
+                ? 'New Chat'
                 : 'rak-GPT',
             drawerLabel: 'Home',
             headerRight: () => <HeaderRight />,

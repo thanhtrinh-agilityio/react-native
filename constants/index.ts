@@ -1,4 +1,4 @@
 export * from './Colors';
-export * from './key';
+export * from './keyConfig';
 export * from './message';
 export * from './route';

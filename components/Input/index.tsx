@@ -8,7 +8,6 @@ import { Colors } from '@/constants/Colors';
 // types
 import { TextInputProps } from '@/types';
 
-
 const InputComponent = ({
   leftIconType,
   leftIconName,
@@ -55,23 +54,25 @@ const InputComponent = ({
             onPress={onRightIconPress}
             color={Colors['light'].icon}
           />
-        ) : rightIcon
+        ) : (
+          rightIcon
+        )
       }
       inputContainerStyle={[
         styles.inputContainer,
         isFocused && styles.inputContainerFocused,
         isPlain && styles.inputContainerPlain,
         isError && styles.inputContainerError,
-        inputContainerStyle
+        inputContainerStyle,
       ]}
       containerStyle={styles.container}
-      inputStyle={[
-        styles.input,
-        isPlain && styles.inputPlain,
+      inputStyle={[styles.input, isPlain && styles.inputPlain]}
+      labelStyle={[
+        styles.label,
+        {
+          ...(isError && { color: Colors.light.error }),
+        },
       ]}
-      labelStyle={[styles.label, {
-        ...isError && { color: Colors.light.error }
-      }]}
       errorMessage={errorMessage}
       onFocus={(e) => {
         setIsFocused(true);
@@ -89,7 +90,7 @@ const InputComponent = ({
 const styles = StyleSheet.create({
   inputContainer: {
     borderRadius: 10,
-    borderColor: "#fff",
+    borderColor: '#fff',
     paddingHorizontal: 8,
     backgroundColor: '#fff',
     minHeight: 48,
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   },
   inputContainerPlain: {
     borderRadius: 24,
-    borderColor: "#fff",
+    borderColor: '#fff',
     paddingHorizontal: 20,
   },
   container: {

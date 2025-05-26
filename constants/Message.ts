@@ -4,6 +4,7 @@ export const MESSAGE = {
   STRONG_PASSWORD: 'Strong password',
   CREATED_ACCOUNT_SUCCESS: 'Account created successfully.',
   LOGIN_SUCCESS: 'Login successful with email and password.',
+  LOGIN_SUCCESS_GOOGLE: 'Login successful with Google.',
 };
 
 export const MESSAGE_ERROR = {

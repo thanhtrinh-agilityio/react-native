@@ -1,4 +1,5 @@
 import { InputProps } from '@rneui/base';
+import { IMessage } from 'react-native-gifted-chat';
 
 export type TextInputProps = InputProps & {
   leftIconType?: string;
@@ -22,3 +23,7 @@ export type ParsedMessage = {
   language?: string;
   fileName?: string;
 };
+
+export interface IMessageWithParsedParts extends IMessage {
+  parsedParts?: ParsedMessage[];
+}

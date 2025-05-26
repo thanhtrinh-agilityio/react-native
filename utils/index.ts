@@ -1,7 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import { IMessage } from 'react-native-gifted-chat';
 
 // Constants
+import { ACCESS_TOKEN_KEY, USER_EMAIL_KEY } from '@/constants';
 
 // Types
 import { ParsedMessage } from '@/types';
@@ -22,6 +24,37 @@ export const formatFirebaseAuthError = (code: string): string => {
       return 'Network error. Please check your connection.';
     default:
       return 'Something went wrong. Please try again.';
+  }
+};
+
+export const saveUserInfo = async (user) => {
+  try {
+    await AsyncStorage.setItem(
+      ACCESS_TOKEN_KEY,
+      user.stsTokenManager.accessToken ?? '',
+    );
+    await AsyncStorage.setItem(USER_EMAIL_KEY, user.email ?? '');
+  } catch (e) {
+    console.error('Failed to save user info:', e);
+  }
+};
+
+export const loadUserChatHistory = async (userEmail: string) => {
+  try {
+    const json = await AsyncStorage.getItem(`chat_messages_${userEmail}`);
+    return json ? JSON.parse(json) : [];
+  } catch (e) {
+    console.error('Failed to load chat history:', e);
+    return [];
+  }
+};
+
+export const saveUserChatHistory = async (userEmail: string, messages: any) => {
+  try {
+    const json = JSON.stringify(messages);
+    await AsyncStorage.setItem(`chat_messages_${userEmail}`, json);
+  } catch (e) {
+    console.error('Failed to save chat history:', e);
   }
 };
 
@@ -86,12 +119,13 @@ export const convertToGiftedMessages = (content: string): IMessage[] => [
   } as IMessage & { parsedParts: ParsedMessage[] },
 ];
 
+// Build payload understood by OpenRouter Vision models
 export const buildOpenRouterMessages = async (
   userText: string,
   imageUri?: string | null,
 ) => {
   const msgs: any[] = [
-    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'assistant', content: 'You are a helpful assistant.' },
   ];
 
   if (!imageUri) {
@@ -112,5 +146,7 @@ export const buildOpenRouterMessages = async (
       { type: 'image_url', image_url: { url: dataUrl } },
     ],
   });
+  console.log('msgs', msgs);
+
   return msgs;
 };

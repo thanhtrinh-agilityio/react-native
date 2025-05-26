@@ -17,10 +17,12 @@ import { SLIDES } from '@/mocks';
 // Services
 
 // Constants
-import { EXPO_ANDROID_CLIENT_ID, ROUTES } from '@/constants';
+import { EXPO_ANDROID_CLIENT_ID, MESSAGE, ROUTES } from '@/constants';
 
 // Services
 import { useLoading } from '@/contexts/LoadingContext';
+
+// firebase
 import { firebaseAuth } from '@/firebaseConfig';
 import { useGoogleSignIn } from '@/services/authService';
 
@@ -31,8 +33,6 @@ const OnboardingScreen = () => {
   const { request, promptAsync } = useGoogleSignIn();
 
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
-
-  // New loading state
   const { isLoading, setLoading } = useLoading();
 
   const handleLoginWithGoogle = async () => {
@@ -70,23 +70,22 @@ const OnboardingScreen = () => {
           Toast.show({
             type: 'success',
             text1: 'Success',
-            text2: 'Login with Google successfully',
+            text2: MESSAGE.LOGIN_SUCCESS_GOOGLE,
           });
         }
         setLoading(false);
       }
     } catch (err) {
-      console.error('[GoogleSignIn] error:', err);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Login with Google failed',
+        text2: err instanceof Error ? err.message : 'An unknown error occurred',
       });
       setLoading(false);
     }
   };
 
-  const renderSlide = ({ item }) => (
+  const renderSlide = ({ item }: { item: (typeof SLIDES)[number] }) => (
     <View style={[styles.containerContent]}>
       <TextBlock
         type="title"
@@ -130,7 +129,7 @@ const OnboardingScreen = () => {
       >
         <View style={styles.logoContainer}>
           <Image
-            source={require('../assets/images/logo-hoz.png')}
+            source={require('@/assets/images/logo-hoz.png')}
             style={styles.logo}
           />
         </View>
@@ -142,6 +141,7 @@ const OnboardingScreen = () => {
             data={SLIDES}
             autoPlay
             loop
+            key={currentIndex}
             scrollAnimationDuration={2000}
             onSnapToItem={(index) => setCurrentIndex(index)}
             renderItem={renderSlide}

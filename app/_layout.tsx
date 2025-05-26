@@ -26,6 +26,8 @@ import { theme } from '@/theme/index';
 
 const storybookEnabled = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
 
+const StorybookUIRoot = require('../.storybook').default;
+
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -67,7 +69,6 @@ export default function RootLayout() {
   if (!appIsReady) return <LoadingOverlay visible text="Loading..." />;
 
   if (showStorybook && storybookEnabled && __DEV__) {
-    const StorybookUIRoot = require('../.storybook').default;
     return <StorybookUIRoot />;
   }
 

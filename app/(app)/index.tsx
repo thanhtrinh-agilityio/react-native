@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 
 // firebase config
 import LoadingOverlay from '@/components/Loading';
+import { ROUTES } from '@/constants';
 import { firebaseAuth } from '@/firebaseConfig';
+import { uuid } from 'expo-modules-core';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 export default function Index() {
@@ -12,10 +14,13 @@ export default function Index() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async currentUser => {
-      setUser(currentUser);
-      setInitializing(false);
-    });
+    const unsubscribe = onAuthStateChanged(
+      firebaseAuth,
+      async (currentUser) => {
+        setUser(currentUser);
+        setInitializing(false);
+      },
+    );
 
     return () => unsubscribe();
   }, []);
@@ -25,8 +30,8 @@ export default function Index() {
   }
 
   if (!user) {
-    return <Redirect href="/welcome" />;
+    return <Redirect href={ROUTES.WELCOME} />;
   }
 
-  return <Redirect href='/home' />;
+  return <Redirect href={`${ROUTES.HOME}?threadId=${uuid.v4().toString()}`} />;
 }

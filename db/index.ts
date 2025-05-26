@@ -16,8 +16,6 @@ export const getDb = async () => {
 
 export const initDatabase = async () => {
   const db = await getDb();
-  //   await db.execAsync(`DROP TABLE IF EXISTS messages;
-  // DROP TABLE IF EXISTS threads;`);
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS threads (
       id TEXT PRIMARY KEY NOT NULL,
@@ -46,10 +44,11 @@ export const saveMessages = async (
   userEmail: string,
   msgs: IMessage[],
 ) => {
-  if (!msgs || !msgs.length) {
+  if ((!msgs || !msgs.length) && !threadId && !userEmail) {
     console.warn('⚠️ saveMessages called with empty or undefined msgs');
     return;
   }
+  console.log('saveMessages', threadId);
 
   const db = await getDb();
 
@@ -68,7 +67,7 @@ export const saveMessages = async (
         },
       );
       for (const m of msgs) {
-        await tx.runAsync(
+        await tx?.runAsync(
           `INSERT INTO messages
               (id, threadId, role, content, image, createdAt, userId, userName, userAvatar)
             VALUES
@@ -100,12 +99,13 @@ export const saveMessages = async (
 
     console.log('✅ Messages saved');
   } catch (e) {
-    console.error('❌ saveMessages failed:', e);
     throw e;
   }
 };
 
 export const loadMessages = async (threadId: string) => {
+  console.log('loadMessages', threadId);
+
   const db = await getDb();
   const rows = await db.getAllAsync(
     `SELECT * FROM messages WHERE threadId = ? ORDER BY createdAt DESC`,

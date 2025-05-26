@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import {
   DrawerContentScrollView,
   useDrawerStatus,
@@ -8,14 +8,11 @@ import { uuid } from 'expo-modules-core';
 import { router } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
-import { BaseButton } from 'react-native-gesture-handler';
+import { Alert, Dimensions, FlatList, StyleSheet, View } from 'react-native';
 
-// components
+// Components
 import { TextInput } from '@/components/Input';
 import { TextBlock } from '../../Text';
-
-// constants
 
 // Hooks
 import useDebounce from '@/hooks/useDebounce';
@@ -28,6 +25,7 @@ import { generateAvatarUrl, getNameFromEmail } from '@/utils';
 
 // Database
 import { loadUserThreadsWithFirstMessage } from '@/db';
+import { BaseButton } from 'react-native-gesture-handler';
 
 // Types
 interface ChatThread {
@@ -35,6 +33,9 @@ interface ChatThread {
   title: string;
   text: string;
 }
+
+const screenHeight = Dimensions.get('window').height;
+const chatListHeight = screenHeight * 0.5;
 
 export const DrawerContent = ({ navigation }) => {
   const [searchTerm, setSearch] = useState('');
@@ -129,7 +130,10 @@ export const DrawerContent = ({ navigation }) => {
   );
 
   return (
-    <DrawerContentScrollView contentContainerStyle={styles.container}>
+    <DrawerContentScrollView
+      contentContainerStyle={styles.container}
+      scrollEnabled
+    >
       <View>
         <TextInput
           value={searchTerm}
@@ -140,36 +144,45 @@ export const DrawerContent = ({ navigation }) => {
           variant="plain"
           inputContainerStyle={styles.searchInput}
         />
-        <BaseButton style={styles.menuItem} aria-disabled>
-          <Ionicons name="chatbubble-ellipses-outline" size={20} />
+        <View style={styles.menuItem} aria-disabled>
+          <Image
+            source={require('@/assets/images/splash-icon-gpt.png')}
+            style={styles.avatar}
+          />
           <TextBlock type="defaultSemiBold">Rak-GPT</TextBlock>
-        </BaseButton>
+        </View>
 
-        <BaseButton style={styles.menuItem} aria-disabled enabled={false}>
+        <View style={styles.menuItem} aria-disabled>
           <Feather name="sliders" size={20} />
           <TextBlock style={styles.menuLabel}>Customize Feed</TextBlock>
-        </BaseButton>
+        </View>
 
-        <BaseButton style={styles.menuItem} aria-disabled>
+        <View style={styles.menuItem} aria-disabled>
           <Feather name="globe" size={20} />
           <TextBlock style={styles.menuLabel} onPress={handleAddNewChat}>
             Community
           </TextBlock>
-        </BaseButton>
+        </View>
 
         <View style={styles.sectionDivider} />
-        {historyChats?.length > 0 && (
-          <>
-            <TextBlock style={styles.sectionTitle}>Recent Chats</TextBlock>
-            <FlatList
-              data={historyChats}
-              keyExtractor={(item, index) => item.id.toString()}
-              renderItem={renderRecentItem}
-              scrollEnabled={false}
-            />
-          </>
-        )}
+        <View style={{ maxHeight: chatListHeight }}>
+          {historyChats?.length > 0 && (
+            <>
+              <TextBlock style={styles.sectionTitle}>Recent Chats</TextBlock>
+              <FlatList
+                data={historyChats}
+                keyExtractor={(item) => item.id}
+                renderItem={renderRecentItem}
+                scrollEnabled={true}
+                nestedScrollEnabled={true} // Cần thiết cho Android
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{ paddingBottom: 8 }}
+              />
+            </>
+          )}
+        </View>
       </View>
+      <View style={styles.sectionDivider} />
       {/* Footer */}
       <View style={styles.footer}>
         {user && (
@@ -212,7 +225,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   searchInput: {
-    marginLeft: -10,
+    marginLeft: 0,
   },
   menuItem: {
     flexDirection: 'row',

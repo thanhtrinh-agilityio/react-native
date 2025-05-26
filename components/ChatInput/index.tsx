@@ -65,7 +65,7 @@ export const ChatInput = ({
 
   const handleImageUpload = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
+      mediaTypes: ['images', 'videos', 'livePhotos'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -130,10 +130,13 @@ export const ChatInput = ({
             onChangeText={setMessage}
             variant="plain"
             image={image}
+            verticalAlign="middle"
             multiline
             numberOfLines={4}
             inputContainerStyle={{
               marginTop: 30,
+              // flexGrow: 1,
+              // flexDirection: 'column',
             }}
             {...(loading && { rightIcon: renderLoading() })}
           />
