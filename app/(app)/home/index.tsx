@@ -46,7 +46,7 @@ import {
 
 export default function ChatGPTScreen({ navigation }: any) {
   const [messages, setMessages] = useState<IMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [chatInput, setChatInput] = useState('');
   const user = getAuth().currentUser;
   const { threadId: paramId, isNew } = useGlobalSearchParams();
   const { threadId: uid } = useLocalSearchParams();
@@ -58,20 +58,28 @@ export default function ChatGPTScreen({ navigation }: any) {
   const avatarUrl = user?.photoURL || generateAvatarUrl(disPlayName || 'Guest');
 
   useEffect(() => {
-    (async () => {
-      if (user) {
-        if ((isNew || !threadId) && uid) {
-          setThreadId(paramId ? (paramId as string) : (uid as string));
-        } else {
-          if (!user.email || isNew) return;
-          const msgs = await loadMessages((paramId as string) ?? threadId!);
-          setThreadId(paramId as string);
-          setMessages(msgs);
-        }
-      } else if (isNew && !user) {
-        setMessages([]);
+    const setupChatThread = async () => {
+      if (!user) {
+        if (isNew) setMessages([]);
+        return;
       }
-    })();
+
+      if ((isNew || !threadId) && uid) {
+        setThreadId((paramId ?? uid) as string);
+        setMessages([]);
+        return;
+      }
+
+      if (isNew || !user.email) return;
+
+      const id = (paramId as string) ?? threadId!;
+      const msgs = await loadMessages(id);
+
+      setThreadId(paramId as string);
+      setMessages(msgs);
+    };
+
+    setupChatThread();
   }, [isNew, paramId, threadId, uid, user]);
 
   // handle send message
@@ -93,12 +101,10 @@ export default function ChatGPTScreen({ navigation }: any) {
       };
 
       setMessages((prev) => GiftedChat.append(prev, [userMsg]));
-      setInput('');
+      setChatInput('');
 
       try {
         const payload = await buildOpenRouterMessages(trimmed, imageUri);
-        console.log('payload', payload);
-
         const reply = await sendMessage(payload);
 
         const replyMsgs = convertToGiftedMessages(reply);
@@ -123,9 +129,15 @@ export default function ChatGPTScreen({ navigation }: any) {
     [disPlayName, avatarUrl, sendMessage, user, threadId, messages.length],
   );
 
-  const handleGetAnswer = async (item: PromptData) => {
-    setInput(item.description);
-  };
+  // handle get answer from prompt
+  const handleGetAnswer = useCallback((item: PromptData) => {
+    setChatInput((prev) => prev + ' ' + item.description);
+  }, []);
+
+  // handle get suggested input
+  const handleGetSuggestedInput = useCallback((label: string) => {
+    setChatInput((prev) => prev + ' ' + label);
+  }, []);
 
   const renderSend = (props: any) => (
     <Send {...props}>
@@ -280,7 +292,7 @@ export default function ChatGPTScreen({ navigation }: any) {
             }}
             isTyping={isLoading}
             showUserAvatar
-            onInputTextChanged={setInput}
+            onInputTextChanged={setChatInput}
             placeholder="Ask what you want..."
             alwaysShowSend
             renderInputToolbar={() => null}
@@ -288,20 +300,18 @@ export default function ChatGPTScreen({ navigation }: any) {
             renderLoading={renderLoading}
           />
         )}
-        {!user && input.length > 0 && (
+        {!user && chatInput.length > 0 && (
           <SuggestInput
             suggestions={MOCK_SUGGESTIONS}
-            onSuggestionPress={(label) => {
-              setInput((prev) => prev + ' ' + label);
-            }}
+            onSuggestionPress={handleGetSuggestedInput}
           />
         )}
       </ScrollView>
       <View style={styles.inputContainer}>
         <ChatInput
           loading={isLoading}
-          message={input}
-          setMessage={setInput}
+          message={chatInput}
+          setMessage={setChatInput}
           onSend={handleSendMessage}
         />
       </View>

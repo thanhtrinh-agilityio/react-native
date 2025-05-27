@@ -1,6 +1,8 @@
+import { IMessage } from 'react-native-gifted-chat';
+
 export const MOCK_SUGGESTIONS = [
-  { label: 'AI', color: '#000', borderColor: '#ccc' },
-  { label: 'Using HTML', color: '#111', borderColor: '#ddd' },
+  { label: 'AI', color: '#50E3C2', borderColor: '#50E3C2' },
+  { label: 'Using HTML', color: '#F5A623', borderColor: '#F5A623' },
 ];
 
 export const MOCK_PROMPT_CARD = {
@@ -48,5 +50,32 @@ export const SLIDES = [
     iconName: 'image',
     description:
       'No login is required to start chatting with our AI-powered chatbot.\nFeel free to ask what you want to know.',
+  },
+];
+
+export const MOCK_CHAT_HISTORY = [
+  {
+    threadId: '1',
+    title: 'Test Thread 1',
+    firstMessage: { text: 'Hello world' },
+  },
+  {
+    threadId: '2',
+    title: 'Test Thread 2',
+    firstMessage: { text: 'Second message' },
+  },
+];
+
+export const MOCK_USER = {
+  email: 'test@example.com',
+  password: 'Password123!',
+};
+
+export const MOCK_MESSAGES: IMessage[] = [
+  {
+    _id: 1,
+    text: 'Hello!',
+    createdAt: new Date(),
+    user: { _id: 2, name: 'User' },
   },
 ];

@@ -4,7 +4,7 @@
     "slug": "rak-gpt",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "com.thanh.trinhagilityo.rakgpt",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/splash-icon-gpt.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
