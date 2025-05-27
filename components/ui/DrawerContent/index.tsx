@@ -179,11 +179,11 @@ export const DrawerContent = ({ navigation }) => {
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={{ paddingBottom: 8 }}
               />
+              <View style={styles.sectionDivider} />
             </>
           )}
         </View>
       </View>
-      <View style={styles.sectionDivider} />
       {/* Footer */}
       <View style={styles.footer}>
         {user && (

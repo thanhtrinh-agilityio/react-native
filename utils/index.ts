@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
+import { franc } from 'franc-min';
+import langs from 'langs';
 import { IMessage } from 'react-native-gifted-chat';
-
 // Constants
 import { ACCESS_TOKEN_KEY, USER_EMAIL_KEY } from '@/constants';
 
@@ -147,4 +148,31 @@ export const buildOpenRouterMessages = async (
     ],
   });
   return msgs;
+};
+
+export const getRandomColor = (): string => {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+};
+
+export const generateUniqueColors = (count: number): string[] => {
+  const colorSet = new Set<string>();
+  while (colorSet.size < count) {
+    colorSet.add(getRandomColor());
+  }
+  return Array.from(colorSet);
+};
+
+export const detectLanguage = (text: string) => {
+  const whitelist = ['eng', 'vie'];
+  const code = franc(text, { only: whitelist });
+
+  if (code === 'und') return { iso3: 'eng', name: 'English' };
+
+  const lang = langs.where('3', code);
+  return { iso3: code, name: lang?.name ?? 'English' };
 };

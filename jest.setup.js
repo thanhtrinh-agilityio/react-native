@@ -12,3 +12,6 @@ jest.mock('@rneui/themed', () => ({
 
 jest.mock('react-native/Libraries/Image/Image', () => 'Image');
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
+jest.mock('franc-min', () => ({
+  franc: jest.fn(() => 'eng'), // Trả về giá trị mặc định
+}));

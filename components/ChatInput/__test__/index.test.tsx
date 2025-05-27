@@ -17,7 +17,7 @@ jest.mock('expo-image-picker', () => ({
 }));
 
 describe('ChatInput Component', () => {
-  const setMessageMock = jest.fn();
+  const onChangeMessageMock = jest.fn();
   const onSendMock = jest.fn();
 
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe('ChatInput Component', () => {
       <ChatInput
         loading={false}
         message=""
-        setMessage={setMessageMock}
+        onChangeMessage={onChangeMessageMock}
         onSend={onSendMock}
       />,
     );
@@ -42,14 +42,14 @@ describe('ChatInput Component', () => {
       <ChatInput
         loading={false}
         message=""
-        setMessage={setMessageMock}
+        onChangeMessage={onChangeMessageMock}
         onSend={onSendMock}
       />,
     );
 
     fireEvent.changeText(getByTestId('chat-input'), 'Hello');
 
-    expect(setMessageMock).toHaveBeenCalledWith('Hello');
+    expect(onChangeMessageMock).toHaveBeenCalledWith('Hello');
   });
 
   it('calls expo-image-picker when image upload button pressed', async () => {
@@ -57,7 +57,7 @@ describe('ChatInput Component', () => {
       <ChatInput
         loading={false}
         message=""
-        setMessage={setMessageMock}
+        onChangeMessage={onChangeMessageMock}
         onSend={onSendMock}
       />,
     );
@@ -74,7 +74,7 @@ describe('ChatInput Component', () => {
       <ChatInput
         loading={false}
         message="Test message"
-        setMessage={setMessageMock}
+        onChangeMessage={onChangeMessageMock}
         onSend={onSendMock}
       />,
     );
@@ -92,7 +92,7 @@ describe('ChatInput Component', () => {
       <ChatInput
         loading={true}
         message=""
-        setMessage={jest.fn()}
+        onChangeMessage={jest.fn()}
         onSend={onSendMock}
       />,
     );

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth } from 'firebase/auth';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,17 +21,17 @@ import {
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import Toast from 'react-native-toast-message';
 import { rainbow } from 'react-syntax-highlighter/styles/hljs';
-
 // Components
 import { ChatInput, PromptCardList, TextBlock } from '@/components';
 import { useSendMessage } from '@/hooks/useSendMessage';
-import { MOCK_SUGGESTIONS, PROMPT_LIST } from '@/mocks';
+import { PROMPT_LIST } from '@/mocks';
 import { IMessageWithParsedParts, ParsedMessage, PromptData } from '@/types';
 
 // Utils
 import { SuggestInput } from '@/components/Input/SuggestInput';
 import { Colors, ROUTES } from '@/constants';
 import { loadMessages, saveMessages } from '@/db';
+import { useSuggestions } from '@/hooks/useSuggestions';
 import {
   buildOpenRouterMessages,
   convertToGiftedMessages,
@@ -52,8 +52,10 @@ export default function ChatGPTScreen({ navigation }: any) {
   const { threadId: uid } = useLocalSearchParams();
 
   const [threadId, setThreadId] = useState<string | null>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
 
   const { mutateAsync: sendMessage, isPending: isLoading } = useSendMessage();
+  const { suggestions, fetchSuggestions, loading } = useSuggestions();
   const disPlayName = user?.displayName || getNameFromEmail(user?.email || '');
   const avatarUrl = user?.photoURL || generateAvatarUrl(disPlayName || 'Guest');
 
@@ -81,6 +83,19 @@ export default function ChatGPTScreen({ navigation }: any) {
 
     setupChatThread();
   }, [isNew, paramId, threadId, uid, user]);
+
+  // handle change message input
+  const handleChangeMessage = (message: string) => {
+    setChatInput(message);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      if (message.trim()) fetchSuggestions(message);
+    }, 500);
+  };
 
   // handle send message
   const handleSendMessage = useCallback(
@@ -273,10 +288,12 @@ export default function ChatGPTScreen({ navigation }: any) {
                 Ask me anything what is are on your mind. Am here to assist you!
               </TextBlock>
             </View>
-            {!user && messages.length === 0 && (
-              <PromptCardList
-                data={PROMPT_LIST}
-                onGetAnswer={handleGetAnswer}
+            <PromptCardList data={PROMPT_LIST} onGetAnswer={handleGetAnswer} />
+            {chatInput.length > 0 && suggestions.length > 0 && (
+              <SuggestInput
+                suggestions={suggestions}
+                onSuggestionPress={handleGetSuggestedInput}
+                isLoading={loading}
               />
             )}
           </>
@@ -300,18 +317,12 @@ export default function ChatGPTScreen({ navigation }: any) {
             renderLoading={renderLoading}
           />
         )}
-        {!user && chatInput.length > 0 && (
-          <SuggestInput
-            suggestions={MOCK_SUGGESTIONS}
-            onSuggestionPress={handleGetSuggestedInput}
-          />
-        )}
       </ScrollView>
       <View style={styles.inputContainer}>
         <ChatInput
           loading={isLoading}
           message={chatInput}
-          setMessage={setChatInput}
+          onChangeMessage={handleChangeMessage}
           onSend={handleSendMessage}
         />
       </View>

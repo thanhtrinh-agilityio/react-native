@@ -1,7 +1,11 @@
-
-
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // constants
 import { Colors } from '@/constants/Colors';
@@ -11,32 +15,36 @@ import { Suggestion } from '@/types';
 
 type SuggestInputProps = {
   suggestions: Suggestion[];
+  isLoading?: boolean;
   onSuggestionPress: (label: string) => void;
 };
 
 export const SuggestInput: React.FC<SuggestInputProps> = ({
   suggestions,
+  isLoading,
   onSuggestionPress,
 }) => {
-
   return (
     <View style={styles.wrapper}>
-      <View style={styles.suggestRow}>
-        {suggestions.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={[
-              styles.suggestBtn,
-              { borderColor: item.borderColor }
-            ]}
-            onPress={() => onSuggestionPress(item.label)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.suggestText, { color: item.color }]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View style={[styles.suggestRow]}>
+        {isLoading ? (
+          <View style={[styles.loadingContainer]}>
+            <ActivityIndicator size="small" color={Colors.light.primary} />
+          </View>
+        ) : (
+          suggestions.map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={[styles.suggestBtn, { borderColor: item.borderColor }]}
+              onPress={() => onSuggestionPress(item.label)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.suggestText, { color: item.color }]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))
+        )}
       </View>
     </View>
   );
@@ -54,10 +62,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    flex: 1,
   },
   suggestBtn: {
     borderWidth: 1,
-    borderStyle: "dotted",
+    borderStyle: 'dotted',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 6,
@@ -73,4 +86,3 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 });
-

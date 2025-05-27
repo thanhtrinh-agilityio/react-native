@@ -102,8 +102,6 @@ export const saveMessages = async (
 };
 
 export const loadMessages = async (threadId: string) => {
-  console.log('loadMessages', threadId);
-
   const db = await getDb();
   const rows = await db.getAllAsync(
     `SELECT * FROM messages WHERE threadId = ? ORDER BY createdAt DESC`,

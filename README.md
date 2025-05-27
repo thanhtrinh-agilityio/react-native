@@ -19,10 +19,7 @@
    - Handle platform differences between Android, iOS
    - Unit test coverage should be greater than 80%
    - Configure the app icon, and splash screen that matches the Expo app.
-   - Must have a form with multiple inputs
-   - Must have a Home screen with a list greater than 1000 items
-   - Must have a screen using Camera and Image Picker (We can use free API to upload Photos or use local URI).
-   - Apply Linking and Deep linking
+   - Apply Expo SDK libraries to build a functional chat app (expo-image, expo-file-system,...)
 
 4. Installation
 
