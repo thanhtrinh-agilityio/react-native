@@ -146,7 +146,5 @@ export const buildOpenRouterMessages = async (
       { type: 'image_url', image_url: { url: dataUrl } },
     ],
   });
-  console.log('msgs', msgs);
-
   return msgs;
 };

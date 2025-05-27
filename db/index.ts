@@ -48,8 +48,6 @@ export const saveMessages = async (
     console.warn('⚠️ saveMessages called with empty or undefined msgs');
     return;
   }
-  console.log('saveMessages', threadId);
-
   const db = await getDb();
 
   try {

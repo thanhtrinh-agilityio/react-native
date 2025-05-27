@@ -8,8 +8,6 @@ import { Colors } from '@/constants/Colors';
 // types
 import { ButtonCustomProps } from '@/types';
 
-
-
 const ButtonBlock = ({
   iconName,
   iconType = 'material',
@@ -29,11 +27,12 @@ const ButtonBlock = ({
       icon={
         iconName ? (
           <Icon
+            testID="icon"
             name={iconName}
             type={iconType}
             size={iconSize}
             color={isSolid ? '#fff' : Colors.light.primary}
-            {...rest.title && ({
+            {...(rest.title && {
               style: {
                 marginRight: 5,
               },
@@ -43,15 +42,22 @@ const ButtonBlock = ({
       }
       buttonStyle={[
         styles.button,
-        isSolid ? undefined : type === 'outline' ? [styles.outline, { borderColor: titleColorOutline }] : styles.clear,
+        isSolid
+          ? undefined
+          : type === 'outline'
+          ? [styles.outline, { borderColor: titleColorOutline }]
+          : styles.clear,
         buttonStyle,
       ]}
+      accessibilityLabel={rest.title as string}
       containerStyle={[styles.container, containerStyle]}
       titleStyle={[
         styles.title,
-        isSolid ? styles.titleSolid : {
-          color: titleColorOutline
-        },
+        isSolid
+          ? styles.titleSolid
+          : {
+              color: titleColorOutline,
+            },
       ]}
       radius={radius}
       {...rest}

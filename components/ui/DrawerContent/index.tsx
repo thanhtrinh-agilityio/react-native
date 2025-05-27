@@ -102,8 +102,8 @@ export const DrawerContent = ({ navigation }) => {
       {
         text: 'Logout',
         onPress: async () => {
-          router.replace('/welcome');
           await logout();
+          router.replace('/welcome');
         },
       },
     ]);
@@ -143,6 +143,7 @@ export const DrawerContent = ({ navigation }) => {
           leftIconName="search"
           variant="plain"
           inputContainerStyle={styles.searchInput}
+          testID="chat-search"
         />
         <View style={styles.menuItem} aria-disabled>
           <Image
@@ -199,7 +200,11 @@ export const DrawerContent = ({ navigation }) => {
                 </TextBlock>
               </View>
             </View>
-            <BaseButton style={styles.logoutButton} onPress={handleLogout}>
+            <BaseButton
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              aria-label="Logout"
+            >
               <Icon
                 name="poweroff"
                 type="antdesign"

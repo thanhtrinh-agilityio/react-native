@@ -3,8 +3,10 @@ import { useLoading } from '@/contexts/LoadingContext';
 import React from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
 
-
-export default function LoadingOverlay({ visible = false, text = "Loading..." }) {
+export default function LoadingOverlay({
+  visible = false,
+  text = 'Loading...',
+}) {
   const { isLoading } = useLoading();
 
   return (
@@ -16,7 +18,11 @@ export default function LoadingOverlay({ visible = false, text = "Loading..." })
     >
       <View style={styles.overlay}>
         <View style={styles.spinnerContainer}>
-          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <ActivityIndicator
+            testID="loading-spinner"
+            size="large"
+            color={Colors.light.primary}
+          />
           {text ? <Text style={styles.loadingText}>{text}</Text> : null}
         </View>
       </View>
