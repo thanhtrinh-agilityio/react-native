@@ -10,14 +10,14 @@ import { MESSAGE } from '@/constants/message';
 type ChatInputProps = {
   loading?: boolean;
   message?: string;
-  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  onChangeMessage: (message: string) => void;
   onSend: (message: string, image?: string) => void;
 };
 
 export const ChatInput = ({
   loading = true,
   message = '',
-  setMessage,
+  onChangeMessage,
   onSend,
 }: ChatInputProps) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -129,7 +129,7 @@ export const ChatInput = ({
             disabled={loading}
             value={message}
             editable={!loading}
-            onChangeText={setMessage}
+            onChangeText={onChangeMessage}
             variant="plain"
             image={image}
             verticalAlign="middle"
