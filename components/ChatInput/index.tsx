@@ -12,6 +12,7 @@ type ChatInputProps = {
   message?: string;
   onChangeMessage: (message: string) => void;
   onSend: (message: string, image?: string) => void;
+  onStopStream?: () => void;
 };
 
 export const ChatInput = ({
@@ -19,6 +20,7 @@ export const ChatInput = ({
   message = '',
   onChangeMessage,
   onSend,
+  onStopStream,
 }: ChatInputProps) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const placeholderAnim = useRef(new Animated.Value(0)).current;
@@ -153,6 +155,7 @@ export const ChatInput = ({
           buttonStyle={styles.sendButton}
           containerStyle={styles.sendButton}
           aria-label="stop-button"
+          onPress={onStopStream}
         />
       ) : (
         <BaseButton

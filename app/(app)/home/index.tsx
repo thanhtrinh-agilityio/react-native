@@ -118,30 +118,73 @@ export default function ChatGPTScreen({ navigation }: any) {
       setMessages((prev) => GiftedChat.append(prev, [userMsg]));
       setChatInput('');
 
+      // Append placeholder for streaming response
+      setMessages((prev) =>
+        GiftedChat.append(prev, [
+          {
+            _id: 'streaming',
+            text: '',
+            createdAt: new Date(),
+            user: {
+              _id: 2,
+              name: 'Rak-GPT',
+              avatar: require('@/assets/images/logo.png'),
+            },
+          },
+        ]),
+      );
+
       try {
         const payload = await buildOpenRouterMessages(trimmed, imageUri);
-        const reply = await sendMessage(payload);
+
+        const reply = await sendMessage({
+          msgs: payload,
+          onMessagePartial: (partialText) => {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg._id === 'streaming' ? { ...msg, text: partialText } : msg,
+              ),
+            );
+          },
+        });
 
         const replyMsgs = convertToGiftedMessages(reply);
-        const messageUpdate = [...replyMsgs, userMsg];
-        user?.email! &&
-          (await saveMessages(threadId!, user!.email!, messageUpdate));
-        setThreadId(threadId);
-        setMessages((prev) => GiftedChat.append(prev, replyMsgs));
-        messages.length === 0 &&
+
+        // Remove streaming placeholder and append reply
+        setMessages((prev) => {
+          const withoutStreaming = prev.filter(
+            (msg) => msg._id !== 'streaming',
+          );
+          return GiftedChat.append(withoutStreaming, replyMsgs);
+        });
+
+        if (user?.email && threadId) {
+          await saveMessages(threadId, user.email, [
+            ...messages,
+            userMsg,
+            ...replyMsgs,
+          ]);
+        }
+
+        if (messages.length === 0) {
           router.push({
             pathname: ROUTES.HOME,
             params: { threadId: threadId, title: trimmed },
           });
+        }
       } catch (err: any) {
         Toast.show({
           type: 'error',
           text1: 'Error',
           text2: String(err?.message || err),
         });
+        console.log('error', err?.message);
+
+        // Remove streaming placeholder on error
+        setMessages((prev) => prev.filter((msg) => msg._id !== 'streaming'));
       }
     },
-    [disPlayName, avatarUrl, sendMessage, user, threadId, messages.length],
+    [disPlayName, avatarUrl, sendMessage, user, threadId, messages],
   );
 
   // handle get answer from prompt
@@ -169,7 +212,7 @@ export default function ChatGPTScreen({ navigation }: any) {
       ];
       const isBot = currentMessage.user._id === 2;
       const avatarUri = isBot
-        ? 'https://avatar.iran.liara.run/public/username?background=random&username=Rak+GPT'
+        ? require('@/assets/images/splash-icon-gpt.png')
         : currentMessage.user.avatar;
 
       return (
