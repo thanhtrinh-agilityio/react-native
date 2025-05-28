@@ -1,44 +1,87 @@
-import { MOCK_MESSAGES } from '@/mocks';
-import { sendMessageToOpenRouter } from '../sendMessage';
+import type { IMessage } from 'react-native-gifted-chat';
+import { sendMessageToOpenRouter } from '../sendMessage'; // ← adjust!
 
-global.fetch = jest.fn();
+jest.mock('@/constants', () => ({
+  OPENROUTER_CONFIG: {
+    url: 'https://openrouter.ai/api/v1',
+    key: 'fake-key',
+    title: 'Test-Run',
+    model: 'test-model',
+  },
+}));
+
+jest.mock('expo/fetch', () => ({
+  fetch: jest.fn(),
+}));
 
 describe('sendMessageToOpenRouter', () => {
+  const giftedMsgs: IMessage[] = [];
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
-  it('should return a message content on successful API call', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { content: 'Hello! How can I help you today?' } }],
+  it('streams chunks, calls onPartial, and resolves the final text', async () => {
+    const encoder = new TextEncoder();
+    const streamedChunks = [
+      encoder.encode(
+        `data: ${JSON.stringify({
+          choices: [{ delta: { content: 'Hel' } }],
+        })}\n`,
+      ),
+      encoder.encode(
+        `data: ${JSON.stringify({
+          choices: [{ delta: { content: 'lo' } }],
+        })}\n`,
+      ),
+      encoder.encode('data: [DONE]\n'),
+    ];
+
+    let idx = 0;
+    const getReader = () => ({
+      read: jest.fn().mockImplementation(() => {
+        if (idx < streamedChunks.length) {
+          return Promise.resolve({ value: streamedChunks[idx++], done: false });
+        }
+        return Promise.resolve({ value: undefined, done: true });
       }),
     });
 
-    const result = await sendMessageToOpenRouter(MOCK_MESSAGES);
-    expect(result).toBe('Hello! How can I help you today?');
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('should return default message if choices[0].message.content is missing', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
+    (global.fetch as unknown as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ choices: [{}] }),
+      body: { getReader },
     });
 
-    const result = await sendMessageToOpenRouter(MOCK_MESSAGES);
-    expect(result).toBe('(no reply)');
+    const onPartial = jest.fn();
+    const result = await sendMessageToOpenRouter(giftedMsgs, onPartial);
+
+    expect(result).toBe('Hello');
+    expect(onPartial).toHaveBeenCalledTimes(2);
+    expect(onPartial).toHaveBeenLastCalledWith('Hello');
   });
 
-  it('should throw an error on failed API call', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      text: async () => 'Unauthorized',
+  it('falls back to non-streaming responses (no getReader)', async () => {
+    (global.fetch as unknown as jest.Mock).mockResolvedValue({
+      ok: true,
+      body: {}, // no getReader
+      text: jest.fn().mockResolvedValue('plain response'),
     });
 
-    await expect(sendMessageToOpenRouter(MOCK_MESSAGES)).rejects.toThrow(
-      'Unauthorized',
+    const onPartial = jest.fn();
+    const result = await sendMessageToOpenRouter(giftedMsgs, onPartial);
+
+    expect(result).toBe('plain response');
+    expect(onPartial).toHaveBeenCalledWith('plain response');
+  });
+
+  it('throws when the server answers with an error status', async () => {
+    (global.fetch as unknown as jest.Mock).mockResolvedValue({
+      ok: false,
+      text: jest.fn().mockResolvedValue('Bad things happened'),
+    });
+
+    await expect(sendMessageToOpenRouter(giftedMsgs)).rejects.toThrow(
+      'Bad things happened',
     );
   });
 });

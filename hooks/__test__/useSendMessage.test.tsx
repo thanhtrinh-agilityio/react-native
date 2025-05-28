@@ -5,7 +5,7 @@ import { IMessage } from 'react-native-gifted-chat';
 
 // Hooks
 import { useSendMessage } from '@/hooks/useSendMessage';
-import { act, renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -25,8 +25,21 @@ const createWrapper = () => {
   return QueryClientProviderWrapper;
 };
 
+const messages: IMessage[] = [
+  {
+    _id: '1',
+    text: 'Hello',
+    createdAt: new Date(),
+    user: { _id: 'user1', name: 'User 1' },
+  },
+];
+
 describe('useSendMessage', () => {
-  it('should call sendMessageToOpenRouter on mutation', async () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('calls sendMessageToOpenRouter and returns the response on success', async () => {
     const mockResponse = 'response from API';
     const sendMessageSpy = jest
       .spyOn(sendMessageModule, 'sendMessageToOpenRouter')
@@ -36,26 +49,39 @@ describe('useSendMessage', () => {
       wrapper: createWrapper(),
     });
 
-    const messages: IMessage[] = [
-      {
-        _id: '1',
-        text: 'Hello',
-        createdAt: new Date(),
-        user: { _id: 'user1', name: 'User 1' },
-      },
-    ];
-
-    const response = await act(async () => {
-      return result.current.mutateAsync(messages);
+    act(() => {
+      result.current.mutate({ msgs: messages });
     });
 
-    expect(sendMessageSpy).toHaveBeenCalledWith(messages);
-    expect(response).toBe(mockResponse);
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    sendMessageSpy.mockRestore();
+    expect(sendMessageSpy).toHaveBeenCalledWith(messages, undefined);
+    expect(result.current.data).toBe(mockResponse);
   });
 
-  it('should handle errors properly', async () => {
+  it('passes onMessagePartial through to sendMessageToOpenRouter', async () => {
+    const onPartial = jest.fn();
+    jest
+      .spyOn(sendMessageModule, 'sendMessageToOpenRouter')
+      .mockResolvedValue('final text');
+
+    const { result } = renderHook(() => useSendMessage(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.mutate({ msgs: messages, onMessagePartial: onPartial });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(sendMessageModule.sendMessageToOpenRouter).toHaveBeenCalledWith(
+      messages,
+      onPartial,
+    );
+  });
+
+  it('exposes error state when the mutation rejects', async () => {
     const mockError = new Error('Failed to send');
     jest
       .spyOn(sendMessageModule, 'sendMessageToOpenRouter')
@@ -65,21 +91,12 @@ describe('useSendMessage', () => {
       wrapper: createWrapper(),
     });
 
-    const messages: IMessage[] = [
-      {
-        _id: '1',
-        text: 'Hello',
-        createdAt: new Date(),
-        user: { _id: 'user1', name: 'User 1' },
-      },
-    ];
+    act(() => {
+      result.current.mutate({ msgs: messages });
+    });
 
-    try {
-      await act(async () => {
-        await result.current.mutateAsync(messages);
-      });
-    } catch (error) {
-      expect(error).toEqual(mockError);
-    }
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(result.current.error).toEqual(mockError);
   });
 });
