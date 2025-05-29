@@ -8,7 +8,14 @@ import { uuid } from 'expo-modules-core';
 import { router } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Dimensions, FlatList, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  Dimensions,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 // Components
 import { TextInput } from '@/components/Input';
@@ -153,17 +160,19 @@ export const DrawerContent = ({ navigation }) => {
           <TextBlock type="defaultSemiBold">Rak-GPT</TextBlock>
         </View>
 
-        <View style={styles.menuItem} aria-disabled>
+        <Pressable style={styles.menuItem} aria-disabled>
           <Feather name="sliders" size={20} />
           <TextBlock style={styles.menuLabel}>Customize Feed</TextBlock>
-        </View>
+        </Pressable>
 
-        <View style={styles.menuItem} aria-disabled>
+        <Pressable
+          style={styles.menuItem}
+          aria-disabled
+          onPress={handleAddNewChat}
+        >
           <Feather name="globe" size={20} />
-          <TextBlock style={styles.menuLabel} onPress={handleAddNewChat}>
-            Community
-          </TextBlock>
-        </View>
+          <TextBlock style={styles.menuLabel}>Community</TextBlock>
+        </Pressable>
 
         <View style={styles.sectionDivider} />
         <View style={{ maxHeight: chatListHeight }}>
@@ -237,6 +246,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
     gap: 10,
+    paddingLeft: 3,
   },
   menuLabel: {
     fontSize: 14,
@@ -271,9 +281,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 20,
+    height: 25,
   },
   username: {
     fontSize: 14,

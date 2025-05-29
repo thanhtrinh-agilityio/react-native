@@ -27,3 +27,13 @@ export type ParsedMessage = {
 export interface IMessageWithParsedParts extends IMessage {
   parsedParts?: ParsedMessage[];
 }
+
+export type GiftedMessageOverride = {
+  _id?: string | number;
+  createdAt?: Date;
+  user?: {
+    _id: string | number;
+    name: string;
+    avatar: string;
+  };
+};

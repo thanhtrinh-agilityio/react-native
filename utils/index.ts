@@ -7,7 +7,7 @@ import { IMessage } from 'react-native-gifted-chat';
 import { ACCESS_TOKEN_KEY, USER_EMAIL_KEY } from '@/constants';
 
 // Types
-import { ParsedMessage } from '@/types';
+import { GiftedMessageOverride, ParsedMessage } from '@/types';
 
 export const formatFirebaseAuthError = (code: string): string => {
   switch (code) {
@@ -60,7 +60,7 @@ export const saveUserChatHistory = async (userEmail: string, messages: any) => {
 };
 
 export const getNameFromEmail = (email: string): string => {
-  if (!email) return 'Guest';
+  if (!email) return 'Boss';
 
   const namePart = email.split('@')[0];
   return namePart
@@ -70,7 +70,7 @@ export const getNameFromEmail = (email: string): string => {
 };
 
 export const generateAvatarUrl = (name: string): string => {
-  const encodedName = encodeURIComponent(name || 'Guest');
+  const encodedName = encodeURIComponent(name || 'Boss');
   return `https://avatar.iran.liara.run/username?background=random&username=${encodedName}`;
 };
 
@@ -105,15 +105,17 @@ export const parseContentToMessages = (content: string): ParsedMessage[] => {
   return messages;
 };
 
-export const convertToGiftedMessages = (content: string): IMessage[] => [
+export const convertToGiftedMessages = (
+  content: string,
+  override: GiftedMessageOverride = {},
+): IMessage[] => [
   {
-    _id: Date.now() + Math.random(),
-    createdAt: new Date(),
-    user: {
+    _id: override._id ?? Date.now() + Math.random(),
+    createdAt: override.createdAt ?? new Date(),
+    user: override.user || {
       _id: 2,
-      name: 'Rak+GPT',
-      avatar:
-        'https://avatar.iran.liara.run/username?background=random&username=Rak+GPT',
+      name: 'Rak-GPT',
+      avatar: require('@/assets/images/logo.png'),
     },
     text: content,
     parsedParts: parseContentToMessages(content),
@@ -122,31 +124,55 @@ export const convertToGiftedMessages = (content: string): IMessage[] => [
 
 // Build payload understood by OpenRouter Vision models
 export const buildOpenRouterMessages = async (
+  history: IMessage[],
   userText: string,
   imageUri?: string | null,
 ) => {
   const msgs: any[] = [
-    { role: 'assistant', content: 'You are a helpful assistant.' },
+    {
+      role: 'system',
+      content: 'You are a helpful assistant.',
+    },
   ];
+
+  const chronological = [...history].sort(
+    (a, b) => (a.createdAt as Date).getTime() - (b.createdAt as Date).getTime(),
+  );
+
+  for (const m of chronological) {
+    const role = m.user._id === 1 ? 'user' : 'assistant';
+
+    if (m.image) {
+      msgs.push({
+        role,
+        content: [
+          { type: 'text', text: m.text || '' },
+          { type: 'image_url', image_url: { url: m.image } },
+        ],
+      });
+    } else {
+      msgs.push({ role, content: m.text });
+    }
+  }
 
   if (!imageUri) {
     msgs.push({ role: 'user', content: userText });
-    return msgs;
+  } else {
+    const base64 = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const mime = imageUri.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+    const dataUrl = `data:image/${mime};base64,${base64}`;
+
+    msgs.push({
+      role: 'user',
+      content: [
+        { type: 'text', text: userText || ' ' },
+        { type: 'image_url', image_url: { url: dataUrl } },
+      ],
+    });
   }
 
-  const base64 = await FileSystem.readAsStringAsync(imageUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  const mime = imageUri.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
-  const dataUrl = `data:image/${mime};base64,${base64}`;
-
-  msgs.push({
-    role: 'user',
-    content: [
-      { type: 'text', text: userText || ' ' },
-      { type: 'image_url', image_url: { url: dataUrl } },
-    ],
-  });
   return msgs;
 };
 
@@ -176,3 +202,19 @@ export const detectLanguage = (text: string) => {
   const lang = langs.where('3', code);
   return { iso3: code, name: lang?.name ?? 'English' };
 };
+
+export const convertMessagesToGiftedFromDB = (
+  messages: IMessage[],
+): (IMessage & { parsedParts: ParsedMessage[] })[] =>
+  messages.map((m) => ({
+    _id: m._id,
+    createdAt: new Date(m.createdAt),
+    text: m.text,
+    image: m.image,
+    user: {
+      _id: m.user._id,
+      name: m.user.name,
+      avatar: m.user.avatar,
+    },
+    parsedParts: parseContentToMessages(m.text),
+  }));

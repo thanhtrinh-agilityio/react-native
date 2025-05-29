@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Clipboard,
+  Dimensions,
   Image,
   ScrollView,
   StyleSheet,
@@ -20,7 +21,7 @@ import {
 } from 'react-native-gifted-chat';
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import Toast from 'react-native-toast-message';
-import { rainbow } from 'react-syntax-highlighter/styles/hljs';
+import { docco } from 'react-syntax-highlighter/styles/hljs';
 // Components
 import { ChatInput, PromptCardList, TextBlock } from '@/components';
 import { useSendMessage } from '@/hooks/useSendMessage';
@@ -34,6 +35,7 @@ import { loadMessages, saveMessages } from '@/db';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import {
   buildOpenRouterMessages,
+  convertMessagesToGiftedFromDB,
   convertToGiftedMessages,
   generateAvatarUrl,
   getNameFromEmail,
@@ -53,11 +55,20 @@ export default function ChatGPTScreen({ navigation }: any) {
 
   const [threadId, setThreadId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<number | null>(null);
-
-  const { mutateAsync: sendMessage, isPending: isLoading } = useSendMessage();
+  const historyRef = useRef<IMessage[]>(messages);
+  const {
+    mutateAsync: sendMessage,
+    isPending: isLoading,
+    cancel,
+  } = useSendMessage();
   const { suggestions, fetchSuggestions, loading } = useSuggestions();
   const disPlayName = user?.displayName || getNameFromEmail(user?.email || '');
-  const avatarUrl = user?.photoURL || generateAvatarUrl(disPlayName || 'Guest');
+  const avatarUrl = user?.photoURL || generateAvatarUrl(disPlayName);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    historyRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     const setupChatThread = async () => {
@@ -76,9 +87,8 @@ export default function ChatGPTScreen({ navigation }: any) {
 
       const id = (paramId as string) ?? threadId!;
       const msgs = await loadMessages(id);
-
       setThreadId(paramId as string);
-      setMessages(msgs);
+      setMessages(convertMessagesToGiftedFromDB(msgs));
     };
 
     setupChatThread();
@@ -93,7 +103,7 @@ export default function ChatGPTScreen({ navigation }: any) {
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      if (message.trim()) fetchSuggestions(message);
+      if (message.trim() && messages?.length === 0) fetchSuggestions(message);
     }, 500);
   };
 
@@ -109,7 +119,7 @@ export default function ChatGPTScreen({ navigation }: any) {
         createdAt: new Date(),
         user: {
           _id: 1,
-          name: disPlayName ?? 'Guest',
+          name: disPlayName,
           avatar: avatarUrl,
         },
         image: imageUri || '',
@@ -135,15 +145,26 @@ export default function ChatGPTScreen({ navigation }: any) {
       );
 
       try {
-        const payload = await buildOpenRouterMessages(trimmed, imageUri);
+        const payload = await buildOpenRouterMessages(
+          historyRef.current,
+          trimmed,
+          imageUri,
+        );
 
         const reply = await sendMessage({
           msgs: payload,
           onMessagePartial: (partialText) => {
+            const [parsedMsg] = convertToGiftedMessages(partialText, {
+              _id: 'streaming',
+              user: {
+                _id: 2,
+                name: 'Rak-GPT',
+                avatar: require('@/assets/images/logo.png'),
+              },
+            });
+
             setMessages((prev) =>
-              prev.map((msg) =>
-                msg._id === 'streaming' ? { ...msg, text: partialText } : msg,
-              ),
+              prev.map((msg) => (msg._id === 'streaming' ? parsedMsg : msg)),
             );
           },
         });
@@ -176,16 +197,19 @@ export default function ChatGPTScreen({ navigation }: any) {
         Toast.show({
           type: 'error',
           text1: 'Error',
-          text2: String(err?.message || err),
+          text2: String(err?.message || err.error.message),
         });
-        console.log('error', err?.message);
 
-        // Remove streaming placeholder on error
         setMessages((prev) => prev.filter((msg) => msg._id !== 'streaming'));
       }
     },
     [disPlayName, avatarUrl, sendMessage, user, threadId, messages],
   );
+
+  // handle stop streaming
+  const handleStopStreaming = useCallback(() => {
+    cancel();
+  }, [cancel]);
 
   // handle get answer from prompt
   const handleGetAnswer = useCallback((item: PromptData) => {
@@ -216,7 +240,12 @@ export default function ChatGPTScreen({ navigation }: any) {
         : currentMessage.user.avatar;
 
       return (
-        <View style={{ paddingHorizontal: 15, marginVertical: 2 }}>
+        <View
+          style={{
+            paddingHorizontal: 15,
+            backgroundColor: '#F5F5F6',
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <GiftedAvatar
               user={{ _id: currentMessage.user._id, avatar: avatarUri }}
@@ -226,7 +255,7 @@ export default function ChatGPTScreen({ navigation }: any) {
             </Text>
           </View>
 
-          <View style={{ marginLeft: 40 }}>
+          <View>
             {currentMessage.image && (
               <Image
                 source={{ uri: currentMessage.image }}
@@ -256,8 +285,16 @@ export default function ChatGPTScreen({ navigation }: any) {
                         await Clipboard.setString(part.text);
                         Alert.alert('Copied!');
                       }}
+                      style={styles.copyButton}
                     >
                       <Ionicons name="copy-outline" size={20} color="#333" />
+                      <TextBlock
+                        style={{
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Copy
+                      </TextBlock>
                     </TouchableOpacity>
                   </View>
 
@@ -265,13 +302,24 @@ export default function ChatGPTScreen({ navigation }: any) {
                     horizontal
                     nestedScrollEnabled
                     showsVerticalScrollIndicator
-                    style={{ borderRadius: 8, backgroundColor: '#f6f8fa' }}
+                    style={{
+                      borderRadius: 8,
+                      backgroundColor: '#fff',
+                    }}
                   >
                     <SyntaxHighlighter
                       language={part?.language || 'text'}
-                      style={rainbow}
+                      style={docco}
                       highlighter="hljs"
-                      customStyle={{ padding: 10, minWidth: 300 }}
+                      customStyle={{
+                        marginLeft: 20,
+                        marginRight: 20,
+                        width: Dimensions.get('window').width - 70,
+                        alignItems: 'center',
+                        backgroundColor: Colors.light.background,
+                        paddingBottom: 10,
+                        borderRadius: 8,
+                      }}
                       PreTag={Text}
                       CodeTag={Text}
                     >
@@ -304,6 +352,10 @@ export default function ChatGPTScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollRef}
+        onContentSizeChange={() =>
+          scrollRef.current?.scrollToEnd({ animated: true })
+        }
         contentContainerStyle={{
           flexGrow: 1,
           backgroundColor: Colors.light.background,
@@ -325,7 +377,7 @@ export default function ChatGPTScreen({ navigation }: any) {
                 style={{ width: 100, height: 100 }}
               />
               <TextBlock h2 type="title" style={styles.text}>
-                Hello, {disPlayName ?? 'Boss'}! {'\n'} Am ready for help you
+                Hello, {disPlayName}! {'\n'} Am ready for help you
               </TextBlock>
               <TextBlock type="subtitle" style={styles.text}>
                 Ask me anything what is are on your mind. Am here to assist you!
@@ -347,10 +399,9 @@ export default function ChatGPTScreen({ navigation }: any) {
             onSend={() => {}}
             user={{
               _id: 1,
-              name: disPlayName ?? 'Boss',
+              name: disPlayName,
               avatar: avatarUrl,
             }}
-            isTyping={isLoading}
             showUserAvatar
             onInputTextChanged={setChatInput}
             placeholder="Ask what you want..."
@@ -367,6 +418,7 @@ export default function ChatGPTScreen({ navigation }: any) {
           message={chatInput}
           onChangeMessage={handleChangeMessage}
           onSend={handleSendMessage}
+          onStopStream={handleStopStreaming}
         />
       </View>
     </View>
@@ -403,15 +455,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   messageContainer: {
-    margin: 8,
-    padding: 10,
+    margin: 0,
+    backgroundColor: '#fff',
     borderRadius: 12,
+    paddingBottom: 15,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 6,
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 12,
+    paddingBottom: 15,
   },
   languageLabel: {
     fontWeight: 'bold',
@@ -419,5 +476,10 @@ const styles = StyleSheet.create({
   },
   fileName: {
     color: '#d73a49',
+  },
+  copyButton: {
+    flexDirection: 'row',
+    gap: 3,
+    marginRight: 10,
   },
 });

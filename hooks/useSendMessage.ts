@@ -10,8 +10,23 @@ type SendMessageArgs = {
 };
 
 export const useSendMessage = () => {
-  return useMutation<string, Error, SendMessageArgs>({
-    mutationFn: ({ msgs, onMessagePartial }) =>
-      sendMessageToOpenRouter(msgs, onMessagePartial),
+  let cancelStream: (() => void) | null = null;
+  const mutation = useMutation<string, Error, SendMessageArgs>({
+    mutationFn: async ({ msgs, onMessagePartial }) => {
+      const { result, cancel } = sendMessageToOpenRouter(
+        msgs,
+        onMessagePartial,
+      );
+      cancelStream = cancel;
+      return await result;
+    },
+    onSettled: () => {
+      cancelStream = null;
+    },
   });
+
+  return {
+    ...mutation,
+    cancel: () => cancelStream?.(),
+  };
 };
