@@ -375,10 +375,8 @@ export default function ChatGPTScreen({ navigation }: any) {
               }}
             >
               <Image
-                source={{
-                  uri: 'https://cdn-icons-png.flaticon.com/512/4712/4712109.png',
-                }}
-                style={{ width: 100, height: 100 }}
+                source={require('@/assets/images/robot.png')}
+                style={{ width: 200, height: 200 }}
               />
               <TextBlock h2 type="title" style={styles.text}>
                 Hello, {disPlayName}! {'\n'} Am ready for help you
