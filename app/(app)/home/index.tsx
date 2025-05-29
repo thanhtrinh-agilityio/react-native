@@ -37,6 +37,7 @@ import {
   buildOpenRouterMessages,
   convertMessagesToGiftedFromDB,
   convertToGiftedMessages,
+  extractErrorMessage,
   generateAvatarUrl,
   getNameFromEmail,
 } from '@/utils';
@@ -194,10 +195,13 @@ export default function ChatGPTScreen({ navigation }: any) {
           });
         }
       } catch (err: any) {
+        const errorMessage = extractErrorMessage(err);
         Toast.show({
           type: 'error',
           text1: 'Error',
-          text2: String(err?.message || err.error.message),
+          text2: errorMessage,
+          position: 'bottom',
+          visibilityTime: 5000,
         });
 
         setMessages((prev) => prev.filter((msg) => msg._id !== 'streaming'));

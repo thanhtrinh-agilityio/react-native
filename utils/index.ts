@@ -218,3 +218,17 @@ export const convertMessagesToGiftedFromDB = (
     },
     parsedParts: parseContentToMessages(m.text),
   }));
+
+export const extractErrorMessage = (err: any): string =>
+  typeof err === 'string'
+    ? err
+    : typeof err?.error?.message === 'string'
+    ? err.error.message
+    : (() => {
+        try {
+          const parsed = JSON.parse(err?.message);
+          return parsed.error?.message || JSON.stringify(parsed);
+        } catch {
+          return err?.message || 'Unknown error occurred';
+        }
+      })() || 'Unknown error occurred';

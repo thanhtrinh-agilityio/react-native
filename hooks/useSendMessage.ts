@@ -3,6 +3,7 @@ import { IMessage } from 'react-native-gifted-chat';
 
 // Services
 import { sendMessageToOpenRouter } from '@/services/sendMessage';
+import { useRef } from 'react';
 
 type SendMessageArgs = {
   msgs: IMessage[];
@@ -10,23 +11,24 @@ type SendMessageArgs = {
 };
 
 export const useSendMessage = () => {
-  let cancelStream: (() => void) | null = null;
+  const cancelRef = useRef<() => void | null>(null);
+
   const mutation = useMutation<string, Error, SendMessageArgs>({
     mutationFn: async ({ msgs, onMessagePartial }) => {
       const { result, cancel } = sendMessageToOpenRouter(
         msgs,
         onMessagePartial,
       );
-      cancelStream = cancel;
+      cancelRef.current = cancel;
       return await result;
     },
     onSettled: () => {
-      cancelStream = null;
+      cancelRef.current = null;
     },
   });
 
   return {
     ...mutation,
-    cancel: () => cancelStream?.(),
+    cancel: () => cancelRef.current?.(),
   };
 };
