@@ -1,5 +1,5 @@
 import { Icon } from '@rneui/base';
-import { CheckBox } from '@rneui/themed';
+import { CheckBox, FullTheme, useTheme } from '@rneui/themed';
 import * as AuthSession from 'expo-auth-session';
 import { uuid } from 'expo-modules-core';
 import { router } from 'expo-router';
@@ -23,7 +23,7 @@ import {
 } from '@/constants';
 
 // Services
-import { useLoading } from '@/contexts/LoadingContext';
+import { useLoading } from '@/LoadingContext';
 import { firebaseAuth } from '@/firebaseConfig';
 import { signInWithEmail, useGoogleSignIn } from '@/services/authService';
 
@@ -32,6 +32,94 @@ type FormData = {
   password: string;
   remember: boolean;
 };
+
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      paddingHorizontal: 20,
+      paddingTop: 100,
+      gap: 10,
+    },
+    title: {
+      marginBottom: 8,
+    },
+    subtitle: {
+      marginTop: 8,
+      marginBottom: 24,
+    },
+    formWrapper: {
+      flex: 1,
+      gap: 8,
+    },
+    containerPassword: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      position: 'absolute',
+      top: 80,
+    },
+    strongPassword: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: 12,
+      marginLeft: 4,
+      height: 20,
+    },
+    resetPassword: {
+      color: 'tomato',
+    },
+    checkbox: {
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      paddingLeft: 0,
+      marginLeft: 4,
+      alignItems: 'flex-start',
+    },
+    button: {
+      marginVertical: 16,
+    },
+    orText: {
+      textAlign: 'center',
+      marginBottom: 10,
+      color: theme?.colors?.text,
+    },
+    googleButton: {
+      borderColor: '#DB4437',
+    },
+    googleText: {
+      marginLeft: 8,
+    },
+    googleIcon: {
+      marginRight: 8,
+    },
+    signup: {
+      marginTop: 16,
+      textAlign: 'center',
+      color: theme?.colors?.text,
+    },
+    link: {
+      fontWeight: 'bold',
+    },
+    checkboxText: {
+      fontWeight: '300',
+    },
+    loadingOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.25)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    containerButtonLogin: {
+      flex: 1,
+      alignContent: 'center',
+      justifyContent: 'flex-end',
+      marginBottom: 40,
+      gap: 16,
+    },
+  });
 
 export default function LoginScreen() {
   const {
@@ -45,6 +133,9 @@ export default function LoginScreen() {
       remember: false,
     },
   });
+  const { theme } = useTheme();
+  const fullTheme = theme as FullTheme;
+  const styles = makeStyles(fullTheme);
   const { request, promptAsync } = useGoogleSignIn();
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
   const [secureText, setSecureText] = useState(true);
@@ -259,7 +350,7 @@ export default function LoginScreen() {
               <TextBlock
                 type="defaultSemiBold"
                 variant="primary"
-                onPress={() => router.navigate('/sign-up')}
+                onPress={() => router.navigate(ROUTES.SIGN_UP)}
               >
                 Create an account
               </TextBlock>
@@ -270,90 +361,3 @@ export default function LoginScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 100,
-    gap: 10,
-  },
-  title: {
-    marginBottom: 8,
-  },
-  subtitle: {
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  formWrapper: {
-    flex: 1,
-    gap: 8,
-  },
-  containerPassword: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    position: 'absolute',
-    top: 80,
-  },
-  strongPassword: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 12,
-    marginLeft: 4,
-    height: 20,
-  },
-  resetPassword: {
-    color: 'tomato',
-  },
-  checkbox: {
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    paddingLeft: 0,
-    marginLeft: 4,
-    alignItems: 'flex-start',
-  },
-  button: {
-    marginVertical: 16,
-  },
-  orText: {
-    textAlign: 'center',
-    marginBottom: 10,
-    color: 'gray',
-  },
-  googleButton: {
-    borderColor: '#DB4437',
-  },
-  googleText: {
-    marginLeft: 8,
-  },
-  googleIcon: {
-    marginRight: 8,
-  },
-  signup: {
-    marginTop: 16,
-    textAlign: 'center',
-    color: 'gray',
-  },
-  link: {
-    fontWeight: 'bold',
-  },
-  checkboxText: {
-    fontWeight: '300',
-  },
-  loadingOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  containerButtonLogin: {
-    flex: 1,
-    alignContent: 'center',
-    justifyContent: 'flex-end',
-    marginBottom: 40,
-    gap: 16,
-  },
-});

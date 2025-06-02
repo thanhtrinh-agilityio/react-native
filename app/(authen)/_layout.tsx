@@ -1,11 +1,12 @@
 import { ROUTES } from '@/constants';
-import { Icon } from '@rneui/themed';
+import { Icon, useTheme } from '@rneui/themed';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable } from 'react-native';
 
 export default function AuthLayout() {
   const router = useRouter();
+  const { theme } = useTheme();
 
   // handle go back
   const handleGoBack = useCallback(() => {
@@ -26,6 +27,7 @@ export default function AuthLayout() {
             <Icon name="arrow-left" size={24} type="feather" />
           </Pressable>
         ),
+        contentStyle: { backgroundColor: theme?.colors?.background },
       }}
     />
   );

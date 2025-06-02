@@ -41,11 +41,72 @@ import {
   generateAvatarUrl,
   getNameFromEmail,
 } from '@/utils';
+import { FullTheme, useTheme } from '@rneui/themed';
 import {
   router,
   useGlobalSearchParams,
   useLocalSearchParams,
 } from 'expo-router';
+
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    message: {
+      marginBottom: 10,
+      padding: 10,
+      borderRadius: 10,
+      alignContent: 'flex-start',
+    },
+    text: {
+      textAlign: 'center',
+      marginTop: 16,
+    },
+    sendButton: {
+      borderRadius: 24,
+      height: 40,
+      width: 40,
+      marginLeft: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingVertical: 0,
+      alignItems: 'center',
+      backgroundColor: theme?.colors?.background,
+    },
+    messageContainer: {
+      margin: 0,
+      backgroundColor: theme?.colors.background,
+      borderRadius: 12,
+      paddingBottom: 15,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+      backgroundColor: theme?.colors.white,
+      padding: 10,
+      borderRadius: 12,
+      paddingBottom: 15,
+    },
+    languageLabel: {
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    fileName: {
+      color: '#d73a49',
+    },
+    copyButton: {
+      flexDirection: 'row',
+      gap: 3,
+      marginRight: 10,
+    },
+  });
 
 export default function ChatGPTScreen({ navigation }: any) {
   const [messages, setMessages] = useState<IMessage[]>([]);
@@ -53,6 +114,8 @@ export default function ChatGPTScreen({ navigation }: any) {
   const user = getAuth().currentUser;
   const { threadId: paramId, isNew } = useGlobalSearchParams();
   const { threadId: uid } = useLocalSearchParams();
+  const { theme } = useTheme();
+  const styles = makeStyles(theme);
 
   const [threadId, setThreadId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<number | null>(null);
@@ -96,17 +159,20 @@ export default function ChatGPTScreen({ navigation }: any) {
   }, [isNew, paramId, threadId, uid, user]);
 
   // handle change message input
-  const handleChangeMessage = (message: string) => {
-    setChatInput(message);
+  const handleChangeMessage = useCallback(
+    (message: string) => {
+      setChatInput(message);
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
-    typingTimeoutRef.current = setTimeout(() => {
-      if (message.trim() && messages?.length === 0) fetchSuggestions(message);
-    }, 500);
-  };
+      typingTimeoutRef.current = setTimeout(() => {
+        if (message.trim() && messages?.length === 0) fetchSuggestions(message);
+      }, 500);
+    },
+    [fetchSuggestions, messages?.length],
+  );
 
   // handle send message
   const handleSendMessage = useCallback(
@@ -160,7 +226,10 @@ export default function ChatGPTScreen({ navigation }: any) {
               user: {
                 _id: 2,
                 name: 'Rak-GPT',
-                avatar: require('@/assets/images/logo.png'),
+                avatar:
+                  theme?.mode === 'dark'
+                    ? require('@/assets/images/splash-icon-gpt-dark.png')
+                    : require('@/assets/images/splash-icon-gpt-light.png'),
               },
             });
 
@@ -207,7 +276,7 @@ export default function ChatGPTScreen({ navigation }: any) {
         setMessages((prev) => prev.filter((msg) => msg._id !== 'streaming'));
       }
     },
-    [disPlayName, avatarUrl, sendMessage, user, threadId, messages],
+    [disPlayName, avatarUrl, sendMessage, user, threadId, messages, theme],
   );
 
   // handle stop streaming
@@ -240,23 +309,26 @@ export default function ChatGPTScreen({ navigation }: any) {
       ];
       const isBot = currentMessage.user._id === 2;
       const avatarUri = isBot
-        ? require('@/assets/images/splash-icon-gpt.png')
+        ? theme?.mode === 'dark'
+          ? require('@/assets/images/splash-icon-gpt-dark.png')
+          : require('@/assets/images/splash-icon-gpt-light.png')
         : currentMessage.user.avatar;
 
       return (
         <View
           style={{
             paddingHorizontal: 15,
-            backgroundColor: '#F5F5F6',
+            backgroundColor: theme?.colors.background,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <GiftedAvatar
               user={{ _id: currentMessage.user._id, avatar: avatarUri }}
+              avatarStyle={{ width: 30, height: 30 }}
             />
-            <Text style={{ fontSize: 14, color: '#555', marginLeft: 8 }}>
+            <TextBlock style={{ marginLeft: 8 }}>
               {currentMessage.user.name || (isBot ? 'Rak-GPT' : 'User')}
-            </Text>
+            </TextBlock>
           </View>
 
           <View>
@@ -277,13 +349,13 @@ export default function ChatGPTScreen({ navigation }: any) {
               part.isCode ? (
                 <View key={index} style={styles.messageContainer}>
                   <View style={styles.headerRow}>
-                    <Text style={styles.languageLabel}>
+                    <TextBlock style={styles.languageLabel}>
                       {part.language?.toUpperCase() || 'CODE'} (
                       <Text style={styles.fileName}>
                         {part.fileName || 'code.txt'}
                       </Text>
                       )
-                    </Text>
+                    </TextBlock>
                     <TouchableOpacity
                       onPress={async () => {
                         await Clipboard.setString(part.text);
@@ -308,7 +380,7 @@ export default function ChatGPTScreen({ navigation }: any) {
                     showsVerticalScrollIndicator
                     style={{
                       borderRadius: 8,
-                      backgroundColor: '#fff',
+                      backgroundColor: theme?.colors.background,
                     }}
                   >
                     <SyntaxHighlighter
@@ -320,7 +392,7 @@ export default function ChatGPTScreen({ navigation }: any) {
                         marginRight: 20,
                         width: Dimensions.get('window').width - 70,
                         alignItems: 'center',
-                        backgroundColor: Colors.light.background,
+                        backgroundColor: theme?.colors.background,
                         paddingBottom: 10,
                         borderRadius: 8,
                       }}
@@ -333,7 +405,7 @@ export default function ChatGPTScreen({ navigation }: any) {
                 </View>
               ) : (
                 <View key={index} style={[styles.message]}>
-                  <Text>{part.text}</Text>
+                  <TextBlock>{part.text}</TextBlock>
                 </View>
               ),
             )}
@@ -341,7 +413,7 @@ export default function ChatGPTScreen({ navigation }: any) {
         </View>
       );
     },
-    [],
+    [styles, theme],
   );
 
   const renderLoading = useCallback(
@@ -362,7 +434,7 @@ export default function ChatGPTScreen({ navigation }: any) {
         }
         contentContainerStyle={{
           flexGrow: 1,
-          backgroundColor: Colors.light.background,
+          backgroundColor: theme.colors.background,
         }}
       >
         {messages?.length === 0 ? (
@@ -376,7 +448,10 @@ export default function ChatGPTScreen({ navigation }: any) {
             >
               <Image
                 source={require('@/assets/images/robot.png')}
-                style={{ width: 200, height: 200 }}
+                style={{
+                  width: 200,
+                  height: 200,
+                }}
               />
               <TextBlock h2 type="title" style={styles.text}>
                 Hello, {disPlayName}! {'\n'} Am ready for help you
@@ -411,6 +486,9 @@ export default function ChatGPTScreen({ navigation }: any) {
             renderInputToolbar={() => null}
             renderSend={renderSend}
             renderLoading={renderLoading}
+            renderChatEmpty={() => null}
+            invertibleScrollViewProps={{ scrollEnabled: false }}
+            messagesContainerStyle={{ flexGrow: 1 }}
           />
         )}
       </ScrollView>
@@ -426,62 +504,3 @@ export default function ChatGPTScreen({ navigation }: any) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  message: {
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 10,
-    alignContent: 'flex-start',
-  },
-  text: {
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  sendButton: {
-    borderRadius: 24,
-    height: 40,
-    width: 40,
-    marginLeft: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 0,
-    alignItems: 'center',
-    backgroundColor: Colors.light.background,
-  },
-  messageContainer: {
-    margin: 0,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingBottom: 15,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 12,
-    paddingBottom: 15,
-  },
-  languageLabel: {
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  fileName: {
-    color: '#d73a49',
-  },
-  copyButton: {
-    flexDirection: 'row',
-    gap: 3,
-    marginRight: 10,
-  },
-});

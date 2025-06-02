@@ -3,7 +3,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 
 // Context
-import { useLoading } from '@/contexts/LoadingContext';
+import { useLoading } from '@/LoadingContext';
 
 // Components
 import LoadingOverlay from '../index';
