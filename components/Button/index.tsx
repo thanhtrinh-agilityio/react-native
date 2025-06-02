@@ -1,12 +1,41 @@
-import { Button, Icon } from '@rneui/themed';
+import { Button, FullTheme, Icon, useTheme } from '@rneui/themed';
 import React, { memo } from 'react';
 import { StyleSheet } from 'react-native';
 
-// constants
-import { Colors } from '@/constants/Colors';
-
 // types
 import { ButtonCustomProps } from '@/types';
+
+// makeStyles function returns styles based on theme
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      width: '100%',
+    },
+    button: {
+      width: '100%',
+      alignItems: 'center',
+      minHeight: 32,
+    },
+    outline: {
+      borderWidth: 1,
+      borderColor:
+        theme?.mode === 'light'
+          ? theme?.colors?.primary
+          : theme?.colors?.secondary,
+    },
+    clear: {
+      backgroundColor: theme?.colors?.secondary,
+      color: theme?.colors?.white,
+    },
+    title: {
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    titleSolid: {
+      color: theme?.colors?.white,
+    },
+  });
 
 const ButtonBlock = ({
   iconName,
@@ -14,12 +43,21 @@ const ButtonBlock = ({
   type = 'solid',
   radius = 12,
   iconSize = 20,
-  titleColorOutline = Colors.light.primary,
+  titleColorOutline = '',
   containerStyle,
   buttonStyle,
   ...rest
 }: ButtonCustomProps) => {
+  const { theme } = useTheme();
+  const fullTheme = theme as FullTheme;
+  const styles = makeStyles(fullTheme);
   const isSolid = type === 'solid';
+
+  // fallback colors from theme or defaults
+  const primaryColor = theme?.colors?.primary;
+  const secondaryColor = theme?.colors?.secondary;
+
+  const outlineColor = titleColorOutline || primaryColor;
 
   return (
     <Button
@@ -31,12 +69,12 @@ const ButtonBlock = ({
             name={iconName}
             type={iconType}
             size={iconSize}
-            color={isSolid ? '#fff' : Colors.light.primary}
-            {...(rest.title && {
-              style: {
-                marginRight: 5,
-              },
-            })}
+            color={
+              isSolid || (theme?.mode === 'dark' && type === 'outline')
+                ? theme?.colors?.white
+                : primaryColor
+            }
+            {...(rest.title && { style: { marginRight: 5 } })}
           />
         ) : undefined
       }
@@ -45,8 +83,8 @@ const ButtonBlock = ({
         isSolid
           ? undefined
           : type === 'outline'
-          ? [styles.outline, { borderColor: titleColorOutline }]
-          : styles.clear,
+          ? [{ borderColor: outlineColor }, styles.outline]
+          : [styles.clear, { backgroundColor: secondaryColor }],
         buttonStyle,
       ]}
       accessibilityLabel={rest.title as string}
@@ -56,7 +94,10 @@ const ButtonBlock = ({
         isSolid
           ? styles.titleSolid
           : {
-              color: titleColorOutline,
+              color:
+                type === 'outline' && theme?.mode === 'dark'
+                  ? secondaryColor
+                  : outlineColor,
             },
       ]}
       radius={radius}
@@ -64,30 +105,5 @@ const ButtonBlock = ({
     />
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  button: {
-    width: '100%',
-    alignItems: 'center',
-    minHeight: 32,
-  },
-  outline: {
-    borderWidth: 1,
-  },
-  clear: {
-    backgroundColor: Colors.light.secondary,
-  },
-  title: {
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  titleSolid: {
-    color: '#fff',
-  },
-});
 
 export const BaseButton = memo(ButtonBlock);

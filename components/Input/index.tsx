@@ -1,12 +1,54 @@
-import { Icon, Image, Input } from '@rneui/themed';
+import { FullTheme, Icon, Image, Input, useTheme } from '@rneui/themed';
 import React, { memo, useState } from 'react';
-import { StyleSheet } from 'react-native';
 
 // themes
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/constants/colors';
 
 // types
 import { TextInputProps } from '@/types';
+import { StyleSheet } from 'react-native';
+
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    inputContainer: {
+      borderRadius: 10,
+      borderColor: '#fff',
+      paddingHorizontal: 8,
+      backgroundColor: '#fff',
+      minHeight: 48,
+      borderWidth: 1,
+      width: '100%',
+    },
+    inputContainerPlain: {
+      borderRadius: 24,
+      borderColor: '#fff',
+      paddingHorizontal: 20,
+    },
+    container: {
+      width: '100%',
+      paddingHorizontal: 0,
+    },
+    inputContainerFocused: {
+      borderColor: theme.colors.borderInput,
+    },
+    inputContainerError: {
+      borderColor: theme.colors.error,
+    },
+    input: {
+      fontSize: 16,
+      paddingLeft: 0,
+      color: theme.colors.textInput,
+    },
+    inputPlain: {
+      fontSize: 16,
+    },
+    label: {
+      fontSize: 14,
+      marginBottom: 4,
+      fontWeight: '500',
+      color: theme.colors.text,
+    },
+  });
 
 const InputComponent = ({
   leftIconType,
@@ -24,7 +66,9 @@ const InputComponent = ({
   const isPlain = variant === 'plain';
   const [isFocused, setIsFocused] = useState(false);
   const isError = typeof errorMessage === 'string' && !!errorMessage;
-
+  const { theme } = useTheme();
+  const fullTheme = theme as FullTheme;
+  const styles = makeStyles(fullTheme);
   return (
     <Input
       {...rest}
@@ -52,7 +96,7 @@ const InputComponent = ({
             name={rightIconName}
             size={20}
             onPress={onRightIconPress}
-            color={Colors['light'].icon}
+            color={theme.colors.icon}
           />
         ) : (
           rightIcon
@@ -70,7 +114,7 @@ const InputComponent = ({
       labelStyle={[
         styles.label,
         {
-          ...(isError && { color: Colors.light.error }),
+          ...(isError && { color: theme.colors.error }),
         },
       ]}
       errorMessage={errorMessage}
@@ -82,49 +126,9 @@ const InputComponent = ({
         setIsFocused(false);
         rest?.onBlur?.(e);
       }}
-      selectionColor={Colors['light'].primary}
+      selectionColor={theme.colors.primary}
     />
   );
 };
-
-const styles = StyleSheet.create({
-  inputContainer: {
-    borderRadius: 10,
-    borderColor: '#fff',
-    paddingHorizontal: 8,
-    backgroundColor: '#fff',
-    minHeight: 48,
-    borderWidth: 1,
-    color: Colors['light'].textInput,
-    width: '100%',
-  },
-  inputContainerPlain: {
-    borderRadius: 24,
-    borderColor: '#fff',
-    paddingHorizontal: 20,
-  },
-  container: {
-    width: '100%',
-    paddingHorizontal: 0,
-  },
-  inputContainerFocused: {
-    borderColor: Colors.light.borderInput,
-  },
-  inputContainerError: {
-    borderColor: Colors.light.error,
-  },
-  input: {
-    fontSize: 16,
-    paddingLeft: 0,
-  },
-  inputPlain: {
-    fontSize: 16,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-});
 
 export const TextInput = memo(InputComponent);

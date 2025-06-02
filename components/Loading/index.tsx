@@ -1,14 +1,42 @@
-import { Colors } from '@/constants/Colors';
-import { useLoading } from '@/contexts/LoadingContext';
+import { useLoading } from '@/LoadingContext';
+import { FullTheme, useTheme } from '@rneui/themed';
 import React from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
+
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: theme?.colors.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    spinnerContainer: {
+      backgroundColor: theme?.colors.white,
+      padding: 25,
+      borderRadius: 15,
+      alignItems: 'center',
+      shadowColor: theme?.colors.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+    },
+    loadingText: {
+      marginTop: 15,
+      fontSize: 16,
+      color: theme?.colors.primary,
+      fontWeight: '600',
+    },
+  });
 
 export default function LoadingOverlay({
   visible = false,
   text = 'Loading...',
 }) {
   const { isLoading } = useLoading();
-
+  const { theme } = useTheme();
+  const fullTheme = theme as FullTheme;
+  const styles = makeStyles(fullTheme);
   return (
     <Modal
       transparent
@@ -21,7 +49,7 @@ export default function LoadingOverlay({
           <ActivityIndicator
             testID="loading-spinner"
             size="large"
-            color={Colors.light.primary}
+            color={theme?.colors.primary}
           />
           {text ? <Text style={styles.loadingText}>{text}</Text> : null}
         </View>
@@ -29,28 +57,3 @@ export default function LoadingOverlay({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  spinnerContainer: {
-    backgroundColor: '#fff',
-    padding: 25,
-    borderRadius: 15,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  loadingText: {
-    marginTop: 15,
-    fontSize: 16,
-    color: '#4A90E2',
-    fontWeight: '600',
-  },
-});

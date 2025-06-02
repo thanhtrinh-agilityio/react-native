@@ -17,7 +17,7 @@ import { BaseButton, TextBlock, TextInput } from '@/components';
 
 // Constants
 import { ROUTES } from '@/constants';
-import { Colors } from '@/constants/Colors';
+import { Colors } from '@/constants/colors';
 import { MESSAGE, MESSAGE_ERROR } from '@/constants/message';
 
 // Services

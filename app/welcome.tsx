@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { uuid } from 'expo-modules-core';
 import { router } from 'expo-router';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import Toast from 'react-native-toast-message';
@@ -14,22 +14,78 @@ import { BaseButton, TextBlock } from '@/components';
 // Mocks
 import { SLIDES } from '@/mocks';
 
-// Services
-
 // Constants
 import { EXPO_ANDROID_CLIENT_ID, MESSAGE, ROUTES } from '@/constants';
 
-// Services
-import { useLoading } from '@/contexts/LoadingContext';
+// Contexts
+import { useLoading } from '@/LoadingContext';
 
 // firebase
 import { firebaseAuth } from '@/firebaseConfig';
 import { useGoogleSignIn } from '@/services/authService';
+import { FullTheme, useTheme } from '@rneui/themed';
+
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingTop: 50,
+    },
+    containerHeader: {
+      flex: 1,
+      paddingTop: 10,
+      paddingHorizontal: 20,
+    },
+    carousel: {
+      alignSelf: 'center',
+    },
+    containerContent: {
+      justifyContent: 'center',
+      gap: 20,
+      width: '100%',
+      paddingTop: 20,
+      paddingHorizontal: 20,
+    },
+    logoContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    logo: {
+      width: 119,
+      height: 39,
+      resizeMode: 'contain',
+      marginRight: 8,
+    },
+    buttonContainer: {
+      backgroundColor: theme?.colors?.backgroundButtonContainer,
+      borderTopLeftRadius: 40,
+      borderTopRightRadius: 40,
+      borderLeftWidth: 1,
+      borderTopWidth: 1,
+      borderRightWidth: 1,
+      borderColor: theme?.colors?.borderButtonContainer,
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      paddingBottom: 30,
+      gap: 12,
+    },
+    buttonIcon: {
+      width: 80,
+      height: 80,
+      marginTop: 50,
+      borderWidth: 1,
+    },
+  });
 
 const OnboardingScreen = () => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
   const carouselRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [carouselWidth, setCarouselWidth] = useState<number | null>(null);
+
   const { request, promptAsync } = useGoogleSignIn();
 
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
@@ -129,7 +185,11 @@ const OnboardingScreen = () => {
       >
         <View style={styles.logoContainer}>
           <Image
-            source={require('@/assets/images/logo-hoz.png')}
+            source={
+              theme?.mode === 'dark'
+                ? require('@/assets/images/logo-hoz-dark.png')
+                : require('@/assets/images/logo-hoz.png')
+            }
             style={styles.logo}
           />
         </View>
@@ -171,7 +231,7 @@ const OnboardingScreen = () => {
           iconSize={18}
           size="lg"
           onPress={() => {
-            router.replace('/sign-up');
+            router.replace(ROUTES.SIGN_UP);
           }}
         />
         <BaseButton
@@ -180,66 +240,12 @@ const OnboardingScreen = () => {
           type="outline"
           size="lg"
           onPress={() => {
-            router.replace('/sign-in');
+            router.replace(ROUTES.SIGN_IN);
           }}
         />
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 50,
-  },
-  containerHeader: {
-    flex: 1,
-    paddingTop: 10,
-    paddingHorizontal: 20,
-  },
-  carousel: {
-    alignSelf: 'center',
-  },
-  containerContent: {
-    justifyContent: 'center',
-    gap: 20,
-    width: '100%',
-    paddingTop: 20,
-    paddingHorizontal: 20,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  logo: {
-    width: 119,
-    height: 39,
-    resizeMode: 'contain',
-    marginRight: 8,
-  },
-  buttonContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    paddingBottom: 30,
-    gap: 12,
-  },
-  buttonIcon: {
-    width: 80,
-    height: 80,
-    marginTop: 50,
-    borderWidth: 1,
-  },
-  loadingOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 
 export default OnboardingScreen;

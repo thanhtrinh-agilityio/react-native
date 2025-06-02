@@ -1,10 +1,44 @@
-import { Text } from '@rneui/themed';
+import { Text, makeStyles } from '@rneui/themed';
 import React, { memo } from 'react';
 import { TextStyle } from 'react-native';
 
 // hooks
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { TextBlockProps, TextType } from '@/types/text';
+
+const useStyles = makeStyles(
+  (theme, { type }: { type: TextType }) =>
+    ({
+      default: {
+        fontSize: 14,
+        fontWeight: '400',
+        lineHeight: 24,
+        color:
+          theme.mode === 'light' ? theme.colors?.black : theme.colors?.white,
+      },
+      defaultSemiBold: {
+        fontSize: 14,
+        fontWeight: '700',
+        lineHeight: 24,
+      },
+      title: {
+        fontSize: 24,
+        fontWeight: '700',
+      },
+      subtitle: {
+        fontSize: 16,
+        fontWeight: '400',
+        lineHeight: 26,
+      },
+      link: {
+        fontSize: 16,
+        fontWeight: '500',
+      },
+      primary: {
+        fontSize: 16,
+      },
+    } as Record<TextType, TextStyle>),
+);
 
 const TextComponent = ({
   style,
@@ -19,36 +53,9 @@ const TextComponent = ({
     variant ?? (type === 'primary' ? 'primary' : 'text'),
   );
 
-  return <Text style={[{ color }, styles[type], style]} {...rest} />;
-};
+  const styles = useStyles({ type });
 
-const styles: Record<TextType, TextStyle> = {
-  default: {
-    fontSize: 14,
-    fontWeight: '400',
-    lineHeight: 24,
-  },
-  defaultSemiBold: {
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: '400',
-    lineHeight: 26,
-  },
-  link: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  primary: {
-    fontSize: 16,
-  },
+  return <Text style={[{ color }, styles[type], style]} {...rest} />;
 };
 
 export const TextBlock = memo(TextComponent);
