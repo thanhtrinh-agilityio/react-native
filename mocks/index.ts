@@ -79,3 +79,28 @@ export const MOCK_MESSAGES: IMessage[] = [
     user: { _id: 2, name: 'User' },
   },
 ];
+
+export const MOCK_THEME = {
+  mode: 'light',
+  colors: {
+    text: '#1f1e58',
+    primary: '#5956fc',
+    background: '#f5f5f6',
+    tint: '#5956fc',
+    icon: '#9f9eb7',
+    error: '#ff3b30',
+    success: '#34c759',
+    warning: '#ff9500',
+    info: '#5ac8fa',
+    secondary: '#eeeeff',
+    borderInput: '#cccbfe',
+    textInput: '#9f9eb7',
+    backgroundButtonContainer: '#fff',
+    borderButtonContainer: '#fff',
+    black: '#000',
+    borderDrawer: '#f7f7f8',
+    backgroundLogoutButton: '#ff612f14',
+    borderLogoutButton: '#ff612f7a',
+    colorLogoutButton: '#ff4c4c',
+  },
+};

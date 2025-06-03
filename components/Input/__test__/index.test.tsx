@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 import { TextInput } from '@/components/Input';
@@ -15,13 +14,14 @@ describe('TextInput Component', () => {
     const { getByTestId } = render(<TextInput testID="text-input" />);
     const input = getByTestId('text-input');
     fireEvent(input, 'focus');
-    expect(input.props.inputContainerStyle[1].borderColor).toBe('#cccbfe')
-  })
+    expect(input.props.inputContainerStyle[1].borderColor).toBe('#cccbfe');
+  });
 
   it('should render with an error style when errorMessage is passed', () => {
-    const { getByTestId } = render(<TextInput testID="text-input" errorMessage="This is an error" />);
+    const { getByTestId } = render(
+      <TextInput testID="text-input" errorMessage="This is an error" />,
+    );
     const input = getByTestId('text-input');
     expect(input.props.errorMessage).toBe('This is an error');
   });
-
 });

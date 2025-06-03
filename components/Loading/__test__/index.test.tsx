@@ -2,14 +2,13 @@ import React from 'react';
 
 import { render } from '@testing-library/react-native';
 
-// Context
-import { useLoading } from '@/LoadingContext';
-
 // Components
 import LoadingOverlay from '../index';
 
-// 1️⃣  Stub the hook that the component relies on
-jest.mock('@/contexts/LoadingContext', () => ({
+// Context
+import { useLoading } from '@/LoadingContext';
+
+jest.mock('@/LoadingContext', () => ({
   useLoading: jest.fn(),
 }));
 
