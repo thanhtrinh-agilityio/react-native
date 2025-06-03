@@ -35,6 +35,26 @@ const makeStreamResponse = (lines: string[]) => {
   } as unknown as Response;
 };
 
+const createGiftedMessage = (text: string): IMessage => ({
+  _id: Math.random().toString(),
+  text,
+  createdAt: new Date(),
+  user: { _id: 1, name: 'User' },
+});
+
+const createReadableStream = (chunks: string[]) => {
+  let i = 0;
+  return new ReadableStream({
+    pull(controller) {
+      if (i < chunks.length) {
+        controller.enqueue(new TextEncoder().encode(chunks[i++]));
+      } else {
+        controller.close();
+      }
+    },
+  });
+};
+
 describe('sendMessageToOpenRouter Service', () => {
   const giftedMsgs: IMessage[] = [
     {
@@ -112,25 +132,97 @@ describe('sendMessageToOpenRouter Service', () => {
   });
 
   it('stops reading when cancel() is called and returns what has streamed so far', async () => {
-    jest.useFakeTimers(); // so the read loop yields
+    jest.useFakeTimers();
 
-    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
-      makeStreamResponse([
-        'data: ' + JSON.stringify({ choices: [{ delta: { content: 'Hel' } }] }),
-        // we never deliver the rest because we’ll cancel
-      ]),
-    );
+    (global.fetch as jest.Mock) = jest
+      .fn()
+      .mockResolvedValue(
+        makeStreamResponse([
+          'data: ' +
+            JSON.stringify({ choices: [{ delta: { content: 'Hel' } }] }),
+        ]),
+      );
 
     const onPartial = jest.fn();
     const { result, cancel } = sendMessageToOpenRouter(giftedMsgs, onPartial);
 
-    // let the first chunk be processed…
     await jest.runOnlyPendingTimersAsync();
-    cancel(); // trigger AbortController
+    cancel();
 
     await expect(result).resolves.toBe('Hel');
     expect(onPartial).toHaveBeenCalledWith('Hel');
 
     jest.useRealTimers();
+  });
+
+  it('continues on malformed JSON lines', async () => {
+    const malformedChunk = 'data: { invalid json }\n';
+    const validChunk = 'data: {"choices":[{"delta":{"content":"Hi"}}]}\n';
+    const doneChunk = 'data: [DONE]\n';
+
+    const stream = createReadableStream([
+      malformedChunk,
+      validChunk,
+      doneChunk,
+    ]);
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      body: stream,
+      headers: new Headers(),
+    });
+
+    const partials: string[] = [];
+
+    const { result } = sendMessageToOpenRouter(
+      [createGiftedMessage('Hi')],
+      (text) => partials.push(text),
+    );
+
+    const output = await result;
+    expect(output).toBe('Hi');
+    expect(partials).toContain('Hi');
+  });
+
+  it('handles AbortError gracefully', async () => {
+    const chunks = [
+      'data: {"choices":[{"delta":{"content":"Hello"}}]}\n',
+      'data: [DONE]\n',
+    ];
+
+    let readCount = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        if (readCount === 0) {
+          controller.enqueue(new TextEncoder().encode(chunks[0]));
+          readCount++;
+        } else {
+          const error = new Error('Aborted');
+          (error as any).name = 'AbortError';
+          controller.error(error);
+        }
+      },
+    });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      body: stream,
+      headers: new Headers(),
+    });
+
+    const onPartial = jest.fn();
+
+    const { result, cancel } = sendMessageToOpenRouter(
+      [createGiftedMessage('Hello')],
+      onPartial,
+    );
+
+    // Wait a little so it starts reading
+    // Then call cancel to trigger aborting
+    cancel();
+
+    const output = await result;
+    expect(output).toContain('Hello');
+    expect(onPartial).toHaveBeenCalled();
   });
 });

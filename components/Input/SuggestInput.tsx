@@ -77,7 +77,11 @@ export const SuggestInput: React.FC<SuggestInputProps> = ({
       <View style={[styles.suggestRow]}>
         {isLoading ? (
           <View style={[styles.loadingContainer]}>
-            <ActivityIndicator size="small" color={Colors.light.primary} />
+            <ActivityIndicator
+              size="small"
+              color={Colors.light.primary}
+              testID="loading-suggest"
+            />
           </View>
         ) : (
           suggestions.map((item) => (

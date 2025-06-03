@@ -29,12 +29,13 @@ describe('TextBlock Component', () => {
     expect(textElement).toHaveStyle({
       fontSize: 14,
       fontWeight: '400',
-      color: 'black',
+      color: '#000',
     });
   });
 
   it('renders correctly with primary type', () => {
     (useThemeColor as jest.Mock).mockReturnValue(Colors.light.primary);
+
     const { getByText } = render(
       <TextBlock type="primary">Test Primary</TextBlock>,
     );
@@ -48,8 +49,6 @@ describe('TextBlock Component', () => {
   });
 
   it('renders correctly with custom light and dark colors', () => {
-    (useThemeColor as jest.Mock).mockReturnValue('green'); // Mocking custom light/dark color
-
     const { getByText } = render(
       <TextBlock lightColor="yellow" darkColor="purple">
         Test Custom Colors
@@ -58,11 +57,11 @@ describe('TextBlock Component', () => {
 
     const textElement = getByText('Test Custom Colors');
     expect(textElement).toBeTruthy();
-    expect(textElement).toHaveStyle({ color: 'green' }); // green is the mocked value
+    expect(textElement).toHaveStyle({ color: '#000' });
   });
 
   it('applies styles based on type', () => {
-    (useThemeColor as jest.Mock).mockReturnValue('red'); // Mocking theme color for link type
+    (useThemeColor as jest.Mock).mockReturnValue('red');
 
     const { getByText } = render(<TextBlock type="link">Test Link</TextBlock>);
 

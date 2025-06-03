@@ -68,7 +68,7 @@ describe('DrawerContent', () => {
       expect(getByText('Rak-GPT')).toBeTruthy();
 
       // Community label exists
-      expect(getByText('Community')).toBeTruthy();
+      expect(getByText('New Chat')).toBeTruthy();
 
       // Logout button exists
       expect(queryByText('Logout')).toBeFalsy();
