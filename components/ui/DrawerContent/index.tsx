@@ -31,6 +31,7 @@ import { logout } from '@/services/authService';
 import { generateAvatarUrl, getNameFromEmail } from '@/utils';
 
 // Database
+import { ROUTES } from '@/constants';
 import { loadUserThreadsWithFirstMessage } from '@/db';
 import { BaseButton } from 'react-native-gesture-handler';
 
@@ -62,7 +63,6 @@ export const DrawerContent = ({ navigation }) => {
   useEffect(() => {
     if (!user?.email) return;
     if (drawerStatus !== 'open') return;
-
     (async () => {
       const list = await loadUserThreadsWithFirstMessage(user.email!);
       const recentHistoryChat = list?.map((thread) => ({
@@ -113,7 +113,7 @@ export const DrawerContent = ({ navigation }) => {
         text: 'Logout',
         onPress: async () => {
           await logout();
-          router.replace('/welcome');
+          router.replace(ROUTES.WELCOME);
         },
       },
     ]);
@@ -136,7 +136,7 @@ export const DrawerContent = ({ navigation }) => {
         </TextBlock>
       </BaseButton>
     ),
-    [handleChatPress],
+    [handleChatPress, styles.chatItem, styles.chatText],
   );
 
   return (

@@ -1,5 +1,5 @@
 import { FullTheme, useTheme } from '@rneui/themed';
-import React from 'react';
+import React, { memo } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -63,11 +63,11 @@ const makeStyles = (theme: FullTheme) =>
     },
   });
 
-export const SuggestInput: React.FC<SuggestInputProps> = ({
+const SuggestInputComponent = ({
   suggestions,
   isLoading,
   onSuggestionPress,
-}) => {
+}: SuggestInputProps) => {
   const { theme } = useTheme();
   const fullTheme = theme as FullTheme;
 
@@ -101,3 +101,5 @@ export const SuggestInput: React.FC<SuggestInputProps> = ({
     </View>
   );
 };
+
+export const SuggestInput = memo(SuggestInputComponent);

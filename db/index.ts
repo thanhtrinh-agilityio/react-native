@@ -129,7 +129,7 @@ export const loadThreadIds = async (userEmail: string) => {
     `SELECT id FROM threads WHERE userEmail = ? ORDER BY createdAt DESC`,
     userEmail,
   );
-  return rows.map((r: any) => ({ threadId: r.id }));
+  return rows.map((r: any) => r.id);
 };
 
 export const loadUserThreadsWithFirstMessage = async (userEmail: string) => {

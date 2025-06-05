@@ -1,6 +1,6 @@
-import { Icon } from '@rneui/themed';
+import { Icon, useTheme } from '@rneui/themed';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 // Components
@@ -15,7 +15,7 @@ type ChatInputProps = {
   onStopStream?: () => void;
 };
 
-export const ChatInput = ({
+const ChatInputComponent = ({
   loading = true,
   message = '',
   onChangeMessage,
@@ -25,6 +25,7 @@ export const ChatInput = ({
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const placeholderAnim = useRef(new Animated.Value(0)).current;
   const [image, setImage] = useState('');
+  const { theme } = useTheme();
 
   useEffect(() => {
     let rotateAnimation: Animated.CompositeAnimation | null = null;
@@ -91,7 +92,11 @@ export const ChatInput = ({
   const renderLoading = useCallback(() => {
     return (
       <Animated.View style={{ transform: [{ rotate }] }}>
-        <Icon name="hourglass-outline" type="ionicon" />
+        <Icon
+          name="hourglass-outline"
+          type="ionicon"
+          color={theme?.colors?.textInput}
+        />
       </Animated.View>
     );
   }, [rotate]);
@@ -164,6 +169,7 @@ export const ChatInput = ({
           buttonStyle={styles.sendButton}
           containerStyle={styles.sendButton}
           aria-label="send-button"
+          disabled={!message}
         />
       )}
     </View>
@@ -190,3 +196,5 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
 });
+
+export const ChatInput = memo(ChatInputComponent);

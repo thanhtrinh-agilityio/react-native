@@ -1,4 +1,4 @@
-import { CheckBox, Icon } from '@rneui/themed';
+import { CheckBox, Icon, useTheme } from '@rneui/themed';
 import { router } from 'expo-router';
 import { FirebaseError } from 'firebase/app';
 import React, { useCallback, useState } from 'react';
@@ -17,7 +17,6 @@ import { BaseButton, TextBlock, TextInput } from '@/components';
 
 // Constants
 import { ROUTES } from '@/constants';
-import { Colors } from '@/constants/colors';
 import { MESSAGE, MESSAGE_ERROR } from '@/constants/message';
 
 // Services
@@ -46,7 +45,7 @@ const SignUpScreen = () => {
 
   const [secureText, setSecureText] = useState(true);
   const [loading, setLoading] = useState(false);
-
+  const { theme } = useTheme();
   // handle submit form
   const handleSubmitForm = async (data: FormData) => {
     const { email, password } = data;
@@ -147,7 +146,7 @@ const SignUpScreen = () => {
                             <View style={styles.strongPassword}>
                               <Icon
                                 name="check-circle-outline"
-                                color={Colors.light.success}
+                                color={theme.colors.success}
                                 size={15}
                               />
                               <TextBlock variant="success">
@@ -200,7 +199,7 @@ const SignUpScreen = () => {
       {/* Full-screen Loading Overlay */}
       <Modal visible={loading} transparent animationType="fade">
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={Colors.light.tint} />
+          <ActivityIndicator size="large" color={theme.colors.tint} />
         </View>
       </Modal>
     </>

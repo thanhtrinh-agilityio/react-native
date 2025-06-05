@@ -46,7 +46,7 @@ const makeStyles = (theme: FullTheme) =>
       fontSize: 14,
       marginBottom: 4,
       fontWeight: '500',
-      color: theme.colors.text,
+      color: theme.colors.textInput,
     },
   });
 

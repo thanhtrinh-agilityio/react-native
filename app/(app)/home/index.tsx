@@ -1,16 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
+import { FullTheme, useTheme } from '@rneui/themed';
+import { router, useGlobalSearchParams } from 'expo-router';
 import { getAuth } from 'firebase/auth';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Clipboard,
-  Dimensions,
   Image,
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import {
@@ -19,34 +22,43 @@ import {
   IMessage,
   Send,
 } from 'react-native-gifted-chat';
-import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import Toast from 'react-native-toast-message';
-import { docco } from 'react-syntax-highlighter/styles/hljs';
+
 // Components
-import { ChatInput, PromptCardList, TextBlock } from '@/components';
+import {
+  Chat,
+  ChatHeader,
+  ChatInput,
+  MarkdownRenderer,
+  PromptCardList,
+  SuggestInput,
+  TextBlock,
+} from '@/components';
+
+// Hooks
 import { useSendMessage } from '@/hooks/useSendMessage';
+import { useSuggestions } from '@/hooks/useSuggestions';
+
+// Mocks
 import { PROMPT_LIST } from '@/mocks';
-import { IMessageWithParsedParts, ParsedMessage, PromptData } from '@/types';
+
+// Types
+import { IMessageWithParsedParts, PromptData } from '@/types';
+
+// Constants
+import { Colors, ROUTES } from '@/constants';
+
+// DB
+import { loadMessages, loadThreadIds, saveMessages } from '@/db';
 
 // Utils
-import { SuggestInput } from '@/components/Input/SuggestInput';
-import { Colors, ROUTES } from '@/constants';
-import { loadMessages, saveMessages } from '@/db';
-import { useSuggestions } from '@/hooks/useSuggestions';
 import {
   buildOpenRouterMessages,
-  convertMessagesToGiftedFromDB,
   convertToGiftedMessages,
   extractErrorMessage,
   generateAvatarUrl,
   getNameFromEmail,
 } from '@/utils';
-import { FullTheme, useTheme } from '@rneui/themed';
-import {
-  router,
-  useGlobalSearchParams,
-  useLocalSearchParams,
-} from 'expo-router';
 
 const makeStyles = (theme: FullTheme) =>
   StyleSheet.create({
@@ -58,6 +70,7 @@ const makeStyles = (theme: FullTheme) =>
       padding: 10,
       borderRadius: 10,
       alignContent: 'flex-start',
+      color: theme?.colors.textInput,
     },
     text: {
       textAlign: 'center',
@@ -78,34 +91,6 @@ const makeStyles = (theme: FullTheme) =>
       alignItems: 'center',
       backgroundColor: theme?.colors?.background,
     },
-    messageContainer: {
-      margin: 0,
-      backgroundColor: theme?.colors.background,
-      borderRadius: 12,
-      paddingBottom: 15,
-    },
-    headerRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 6,
-      backgroundColor: theme?.colors.white,
-      padding: 10,
-      borderRadius: 12,
-      paddingBottom: 15,
-    },
-    languageLabel: {
-      fontWeight: 'bold',
-      color: '#333',
-    },
-    fileName: {
-      color: '#d73a49',
-    },
-    copyButton: {
-      flexDirection: 'row',
-      gap: 3,
-      marginRight: 10,
-    },
   });
 
 export default function ChatGPTScreen({ navigation }: any) {
@@ -113,50 +98,77 @@ export default function ChatGPTScreen({ navigation }: any) {
   const [chatInput, setChatInput] = useState('');
   const user = getAuth().currentUser;
   const { threadId: paramId, isNew } = useGlobalSearchParams();
-  const { threadId: uid } = useLocalSearchParams();
   const { theme } = useTheme();
-  const styles = makeStyles(theme);
+  const styles = makeStyles(theme as FullTheme);
+  const [isNewThread, setIsNewThread] = useState(!!isNew);
 
   const [threadId, setThreadId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<number | null>(null);
   const historyRef = useRef<IMessage[]>(messages);
+
   const {
     mutateAsync: sendMessage,
     isPending: isLoading,
     cancel,
   } = useSendMessage();
-  const { suggestions, fetchSuggestions, loading } = useSuggestions();
-  const disPlayName = user?.displayName || getNameFromEmail(user?.email || '');
-  const avatarUrl = user?.photoURL || generateAvatarUrl(disPlayName);
+
+  const { suggestions, fetchSuggestions, loading } = useSuggestions(!!isNew);
   const scrollRef = useRef<ScrollView>(null);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const disPlayName = user?.displayName || getNameFromEmail(user?.email || '');
+  const avatarUrl = useMemo(
+    () => user?.photoURL || generateAvatarUrl(disPlayName),
+    [user, disPlayName],
+  );
 
   useEffect(() => {
     historyRef.current = messages;
   }, [messages]);
 
   useEffect(() => {
+    const initializeNewThread = () => {
+      setThreadId(paramId as string);
+      setMessages([]);
+      setChatInput('');
+    };
+
+    const loadExistingThread = async (email: string, threadId: string) => {
+      try {
+        const threadIds = await loadThreadIds(email);
+        const threadExists = threadIds?.includes(threadId);
+
+        if (!threadExists) return;
+
+        setIsLoadingMessages(true);
+        const msgs = await loadMessages(threadId);
+        setThreadId(threadId);
+        setMessages(msgs);
+        setIsNewThread(false);
+      } catch (err) {
+        console.error('Failed to load messages:', err);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+
     const setupChatThread = async () => {
       if (!user) {
-        if (isNew) setMessages([]);
-        return;
-      }
-
-      if ((isNew || !threadId) && uid) {
-        setThreadId((paramId ?? uid) as string);
         setMessages([]);
         return;
       }
 
-      if (isNew || !user.email) return;
+      if (isNew) {
+        initializeNewThread();
+        return;
+      }
 
-      const id = (paramId as string) ?? threadId!;
-      const msgs = await loadMessages(id);
-      setThreadId(paramId as string);
-      setMessages(convertMessagesToGiftedFromDB(msgs));
+      if (user.email && !isNewThread) {
+        await loadExistingThread(user.email, paramId as string);
+      }
     };
 
     setupChatThread();
-  }, [isNew, paramId, threadId, uid, user]);
+  }, [paramId, user, isNewThread]);
 
   // handle change message input
   const handleChangeMessage = useCallback(
@@ -195,21 +207,29 @@ export default function ChatGPTScreen({ navigation }: any) {
       setMessages((prev) => GiftedChat.append(prev, [userMsg]));
       setChatInput('');
 
-      // Append placeholder for streaming response
+      const botMessageId = `streaming_${Date.now()}`;
+      const botInfo = {
+        _id: 2,
+        name: 'Rak-GPT',
+        avatar:
+          theme?.mode === 'dark'
+            ? require('@/assets/images/splash-icon-gpt-dark.png')
+            : require('@/assets/images/splash-icon-gpt-light.png'),
+      };
+
       setMessages((prev) =>
         GiftedChat.append(prev, [
           {
-            _id: 'streaming',
+            _id: botMessageId,
             text: '',
             createdAt: new Date(),
-            user: {
-              _id: 2,
-              name: 'Rak-GPT',
-              avatar: require('@/assets/images/logo.png'),
-            },
+            user: botInfo,
           },
         ]),
       );
+
+      let isDone = false;
+      let finalReply = '';
 
       try {
         const payload = await buildOpenRouterMessages(
@@ -222,34 +242,39 @@ export default function ChatGPTScreen({ navigation }: any) {
           msgs: payload,
           onMessagePartial: (partialText) => {
             const [parsedMsg] = convertToGiftedMessages(partialText, {
-              _id: 'streaming',
-              user: {
-                _id: 2,
-                name: 'Rak-GPT',
-                avatar:
-                  theme?.mode === 'dark'
-                    ? require('@/assets/images/splash-icon-gpt-dark.png')
-                    : require('@/assets/images/splash-icon-gpt-light.png'),
-              },
+              _id: botMessageId,
+              user: botInfo,
             });
 
             setMessages((prev) =>
-              prev.map((msg) => (msg._id === 'streaming' ? parsedMsg : msg)),
+              prev.map((msg) => (msg._id === botMessageId ? parsedMsg : msg)),
             );
           },
+          onStatusChange: async (status, detail) => {
+            if (status === 'done') {
+              isDone = true;
+              finalReply = detail;
+            }
+            if (status === 'error') {
+              Toast.show({
+                type: 'error',
+                text1: 'Stream Error',
+                text2: extractErrorMessage(detail),
+                position: 'bottom',
+              });
+            }
+          },
         });
-
         const replyMsgs = convertToGiftedMessages(reply);
-
-        // Remove streaming placeholder and append reply
+        setIsNewThread(false);
         setMessages((prev) => {
           const withoutStreaming = prev.filter(
-            (msg) => msg._id !== 'streaming',
+            (msg) => msg._id !== botMessageId,
           );
           return GiftedChat.append(withoutStreaming, replyMsgs);
         });
 
-        if (user?.email && threadId) {
+        if (user?.email && threadId && isDone) {
           await saveMessages(threadId, user.email, [
             ...messages,
             userMsg,
@@ -273,10 +298,18 @@ export default function ChatGPTScreen({ navigation }: any) {
           visibilityTime: 5000,
         });
 
-        setMessages((prev) => prev.filter((msg) => msg._id !== 'streaming'));
+        setMessages((prev) => prev.filter((msg) => msg._id !== botMessageId));
       }
     },
-    [disPlayName, avatarUrl, sendMessage, user, threadId, messages, theme],
+    [
+      disPlayName,
+      avatarUrl,
+      theme?.mode,
+      sendMessage,
+      user?.email,
+      threadId,
+      messages,
+    ],
   );
 
   // handle stop streaming
@@ -294,19 +327,20 @@ export default function ChatGPTScreen({ navigation }: any) {
     setChatInput((prev) => prev + ' ' + label);
   }, []);
 
-  const renderSend = (props: any) => (
-    <Send {...props}>
-      <View style={styles.sendButton}>
-        <Ionicons name="send" size={20} color="white" />
-      </View>
-    </Send>
+  const renderSend = useCallback(
+    (props: any) => (
+      <Send {...props}>
+        <View style={styles.sendButton}>
+          <Ionicons name="send" size={20} color="white" />
+        </View>
+      </Send>
+    ),
+    [],
   );
 
+  // render message
   const renderMessage = useCallback(
     ({ currentMessage }: { currentMessage: IMessageWithParsedParts }) => {
-      const parts: ParsedMessage[] = currentMessage?.parsedParts || [
-        { text: currentMessage.text },
-      ];
       const isBot = currentMessage.user._id === 2;
       const avatarUri = isBot
         ? theme?.mode === 'dark'
@@ -317,8 +351,9 @@ export default function ChatGPTScreen({ navigation }: any) {
       return (
         <View
           style={{
-            paddingHorizontal: 15,
+            paddingHorizontal: 20,
             backgroundColor: theme?.colors.background,
+            width: '100%',
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -344,76 +379,12 @@ export default function ChatGPTScreen({ navigation }: any) {
                 resizeMode="cover"
               />
             )}
-
-            {parts?.map((part, index) =>
-              part.isCode ? (
-                <View key={index} style={styles.messageContainer}>
-                  <View style={styles.headerRow}>
-                    <TextBlock style={styles.languageLabel}>
-                      {part.language?.toUpperCase() || 'CODE'} (
-                      <Text style={styles.fileName}>
-                        {part.fileName || 'code.txt'}
-                      </Text>
-                      )
-                    </TextBlock>
-                    <TouchableOpacity
-                      onPress={async () => {
-                        await Clipboard.setString(part.text);
-                        Alert.alert('Copied!');
-                      }}
-                      style={styles.copyButton}
-                    >
-                      <Ionicons name="copy-outline" size={20} color="#333" />
-                      <TextBlock
-                        style={{
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        Copy
-                      </TextBlock>
-                    </TouchableOpacity>
-                  </View>
-
-                  <ScrollView
-                    horizontal
-                    nestedScrollEnabled
-                    showsVerticalScrollIndicator
-                    style={{
-                      borderRadius: 8,
-                      backgroundColor: theme?.colors.background,
-                    }}
-                  >
-                    <SyntaxHighlighter
-                      language={part?.language || 'text'}
-                      style={docco}
-                      highlighter="hljs"
-                      customStyle={{
-                        marginLeft: 20,
-                        marginRight: 20,
-                        width: Dimensions.get('window').width - 70,
-                        alignItems: 'center',
-                        backgroundColor: theme?.colors.background,
-                        paddingBottom: 10,
-                        borderRadius: 8,
-                      }}
-                      PreTag={Text}
-                      CodeTag={Text}
-                    >
-                      {part.text}
-                    </SyntaxHighlighter>
-                  </ScrollView>
-                </View>
-              ) : (
-                <View key={index} style={[styles.message]}>
-                  <TextBlock>{part.text}</TextBlock>
-                </View>
-              ),
-            )}
+            <MarkdownRenderer content={currentMessage.text} />
           </View>
         </View>
       );
     },
-    [styles, theme],
+    [theme],
   );
 
   const renderLoading = useCallback(
@@ -439,29 +410,9 @@ export default function ChatGPTScreen({ navigation }: any) {
       >
         {messages?.length === 0 ? (
           <>
-            <View
-              style={{
-                flex: 1,
-                alignItems: 'center',
-                paddingHorizontal: 20,
-              }}
-            >
-              <Image
-                source={require('@/assets/images/robot.png')}
-                style={{
-                  width: 200,
-                  height: 200,
-                }}
-              />
-              <TextBlock h2 type="title" style={styles.text}>
-                Hello, {disPlayName}! {'\n'} Am ready for help you
-              </TextBlock>
-              <TextBlock type="subtitle" style={styles.text}>
-                Ask me anything what is are on your mind. Am here to assist you!
-              </TextBlock>
-            </View>
+            <ChatHeader displayName={disPlayName} />
             <PromptCardList data={PROMPT_LIST} onGetAnswer={handleGetAnswer} />
-            {chatInput.length > 0 && suggestions.length > 0 && (
+            {suggestions.length > 0 && (
               <SuggestInput
                 suggestions={suggestions}
                 onSuggestionPress={handleGetSuggestedInput}
@@ -469,26 +420,25 @@ export default function ChatGPTScreen({ navigation }: any) {
               />
             )}
           </>
-        ) : (
-          <GiftedChat
-            messages={messages}
-            renderMessage={renderMessage}
-            onSend={() => {}}
-            user={{
-              _id: 1,
-              name: disPlayName,
-              avatar: avatarUrl,
+        ) : isLoadingMessages ? (
+          <View
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-            showUserAvatar
-            onInputTextChanged={setChatInput}
+          >
+            <ActivityIndicator size="large" color={Colors.light.primary} />
+          </View>
+        ) : (
+          <Chat
+            messages={messages}
+            disPlayName={disPlayName}
+            avatarUrl={avatarUrl}
             placeholder="Ask what you want..."
-            alwaysShowSend
-            renderInputToolbar={() => null}
+            renderMessage={renderMessage}
             renderSend={renderSend}
             renderLoading={renderLoading}
-            renderChatEmpty={() => null}
-            invertibleScrollViewProps={{ scrollEnabled: false }}
-            messagesContainerStyle={{ flexGrow: 1 }}
           />
         )}
       </ScrollView>
