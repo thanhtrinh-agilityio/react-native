@@ -1,8 +1,8 @@
-import { Colors } from '@/constants/colors';
+import { colors } from '@/constants/colors';
 import { createTheme } from '@rneui/themed';
 
 export const lightTheme = createTheme({
-  lightColors: Colors.light,
+  lightColors: colors.light,
   components: {
     Button: {
       raised: false,
@@ -11,7 +11,7 @@ export const lightTheme = createTheme({
 });
 
 export const darkTheme = createTheme({
-  darkColors: Colors.dark,
+  darkColors: colors.dark,
   components: {
     Button: {
       raised: false,
