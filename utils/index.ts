@@ -3,6 +3,7 @@ import { franc } from 'franc-min';
 import langs from 'langs';
 import { IMessage } from 'react-native-gifted-chat';
 // Types
+import { REGEX_BY_CODE_LANGUAGE } from '@/constants';
 import { GiftedMessageOverride, ParsedMessage } from '@/types';
 
 export const formatFirebaseAuthError = (code: string): string => {
@@ -41,36 +42,36 @@ export const generateAvatarUrl = (name: string): string => {
   return `https://avatar.iran.liara.run/username?background=random&username=${encodedName}`;
 };
 
-export const parseContentToMessages = (content: string): ParsedMessage[] => {
-  const messages: ParsedMessage[] = [];
-  const regex = /```(\w+)?\n([\s\S]*?)```/g;
-  let lastIndex = 0;
-  let match;
+// export const parseContentToMessages = (content: string): ParsedMessage[] => {
+//   const messages: ParsedMessage[] = [];
+//   const regex = /```(\w+)?\n([\s\S]*?)```/g;
+//   let lastIndex = 0;
+//   let match;
 
-  while ((match = regex.exec(content)) !== null) {
-    const [fullMatch, lang, code] = match;
-    const start = match.index;
+//   while ((match = regex.exec(content)) !== null) {
+//     const [fullMatch, lang, code] = match;
+//     const start = match.index;
 
-    if (start > lastIndex) {
-      const beforeText = content.slice(lastIndex, start).trim();
-      if (beforeText) messages.push({ text: beforeText });
-    }
+//     if (start > lastIndex) {
+//       const beforeText = content.slice(lastIndex, start).trim();
+//       if (beforeText) messages.push({ text: beforeText });
+//     }
 
-    messages.push({
-      text: code.trim(),
-      isCode: true,
-      language: lang || 'text',
-      fileName: lang ? `index.${lang}` : undefined,
-    });
+//     messages.push({
+//       text: code.trim(),
+//       isCode: true,
+//       language: lang || 'text',
+//       fileName: lang ? `index.${lang}` : undefined,
+//     });
 
-    lastIndex = regex.lastIndex;
-  }
+//     lastIndex = regex.lastIndex;
+//   }
 
-  const remainingText = content.slice(lastIndex).trim();
-  if (remainingText) messages.push({ text: remainingText });
+//   const remainingText = content.slice(lastIndex).trim();
+//   if (remainingText) messages.push({ text: remainingText });
 
-  return messages;
-};
+//   return messages;
+// };
 
 export const convertToGiftedMessages = (
   content: string,
@@ -85,7 +86,7 @@ export const convertToGiftedMessages = (
       avatar: require('@/assets/images/logo.png'),
     },
     text: content,
-    parsedParts: parseContentToMessages(content),
+    // parsedParts: parseContentToMessages(content),
   } as IMessage & { parsedParts: ParsedMessage[] },
 ];
 
@@ -170,22 +171,6 @@ export const detectLanguage = (text: string) => {
   return { iso3: code, name: lang?.name ?? 'English' };
 };
 
-export const convertMessagesToGiftedFromDB = (
-  messages: IMessage[],
-): (IMessage & { parsedParts: ParsedMessage[] })[] =>
-  messages.map((m) => ({
-    _id: m._id,
-    createdAt: new Date(m.createdAt),
-    text: m.text,
-    image: m.image,
-    user: {
-      _id: m.user._id,
-      name: m.user.name,
-      avatar: m.user.avatar,
-    },
-    parsedParts: parseContentToMessages(m.text),
-  }));
-
 export const extractErrorMessage = (err: any): string =>
   typeof err === 'string'
     ? err
@@ -199,3 +184,24 @@ export const extractErrorMessage = (err: any): string =>
           return err?.message || 'Unknown error occurred';
         }
       })() || 'Unknown error occurred';
+
+export const extractFilename = (content = '', lang = ''): string | null => {
+  const lines = content.trim().split('\n').slice(0, 5);
+  const patterns =
+    REGEX_BY_CODE_LANGUAGE[lang] || REGEX_BY_CODE_LANGUAGE.default;
+
+  for (const line of lines) {
+    for (const regex of patterns) {
+      const match = line.match(regex);
+      if (match) return match[1].trim();
+    }
+  }
+
+  const fallback = /([a-zA-Z0-9_.-]+\.[a-z0-9]+)/;
+  for (const line of lines) {
+    const match = line.match(fallback);
+    if (match) return match[1].trim();
+  }
+
+  return null;
+};

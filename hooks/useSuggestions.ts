@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // Constants
 import { OPENROUTER_CONFIG } from '@/constants';
@@ -12,9 +12,15 @@ type Suggestion = {
   borderColor: string;
 };
 
-export const useSuggestions = () => {
+export const useSuggestions = (isNewChat = false) => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isNewChat) {
+      setSuggestions([]);
+    }
+  }, [isNewChat]);
 
   const fetchSuggestions = useCallback(async (inputText: string) => {
     if (!inputText.trim()) {

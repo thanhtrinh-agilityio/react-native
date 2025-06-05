@@ -1,0 +1,256 @@
+import { Icon } from '@rneui/base';
+import { FullTheme, useTheme } from '@rneui/themed';
+import React, { memo, RefObject, useRef } from 'react';
+import {
+  Alert,
+  Clipboard,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Markdown from 'react-native-markdown-display';
+import SyntaxHighlighter from 'react-native-syntax-highlighter';
+import { docco } from 'react-syntax-highlighter/styles/hljs';
+
+// Components
+import { TextBlock } from '@/components';
+
+// Constants
+import { REGEX_CODE_LANGUAGE } from '@/constants';
+
+// Utils
+import { extractFilename } from '@/utils';
+
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    messageContainer: {
+      backgroundColor: theme.colors.white,
+      borderRadius: 12,
+      paddingBottom: 15,
+      marginBottom: 10,
+      width: '100%',
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+      backgroundColor: theme.colors.white,
+      padding: 10,
+      borderRadius: 12,
+    },
+    languageLabel: {
+      fontWeight: 'bold',
+      color: theme.colors.textInput,
+    },
+    fileName: {
+      color: '#d73a49',
+      textTransform: 'lowercase',
+    },
+  });
+
+const MarkdownRendererComponent = ({ content }: { content: string }) => {
+  const { theme } = useTheme();
+  const styles = makeStyles(theme as FullTheme);
+  const currentHeadingRef = useRef<{
+    text?: string;
+    index?: number;
+    isCodeHeading?: boolean;
+    lang?: string;
+    fileName?: string | null;
+  } | null>(null);
+
+  const skipFenceIndexRef = useRef<number | null>(null);
+
+  const getKey = (prefix: string, node: any, index?: number) =>
+    `${prefix}-${node.key ?? index ?? JSON.stringify(node)}`;
+
+  const renderHeading = (
+    node: any,
+    index: number,
+    level: number,
+    currentHeadingRef: RefObject<{
+      text?: string;
+      index?: number;
+      isCodeHeading?: boolean;
+      lang?: string;
+      fileName?: string | null;
+    } | null>,
+    skipFenceIndexRef: RefObject<number | null>,
+  ) => {
+    const headingText = node.children?.[0]?.children?.[0]?.content || '';
+
+    // Check xem có phải heading code (file) không
+    const isCodeHeading = REGEX_CODE_LANGUAGE.test(headingText);
+
+    if (isCodeHeading) {
+      const fileName = extractFilename(headingText);
+      const lang = fileName?.split('.').pop()?.toLowerCase() || 'text';
+
+      currentHeadingRef.current = {
+        text: headingText,
+        index,
+        isCodeHeading: true,
+        lang,
+        fileName,
+      };
+      skipFenceIndexRef.current = null;
+
+      return null;
+    }
+    return (
+      <View key={getKey(`heading${level}`, node, index)}>
+        <TextBlock type="subtitle">{headingText}</TextBlock>
+      </View>
+    );
+  };
+
+  const rules = {
+    heading3: (node, children, parent, index) =>
+      renderHeading(node, index, 3, currentHeadingRef, skipFenceIndexRef),
+    heading4: (node, children, parent, index) =>
+      renderHeading(node, index, 4, currentHeadingRef, skipFenceIndexRef),
+
+    fence: (node, index) => {
+      const fileName =
+        currentHeadingRef.current?.fileName ||
+        extractFilename(node.content, node.sourceInfo);
+
+      if (
+        (currentHeadingRef.current?.isCodeHeading ||
+          (node.sourceInfo && fileName)) &&
+        skipFenceIndexRef.current !== index
+      ) {
+        skipFenceIndexRef.current = index;
+        const language =
+          node.sourceInfo || currentHeadingRef.current?.lang || 'text';
+        const code = node.content;
+        currentHeadingRef.current = null;
+
+        return (
+          <View
+            key={getKey('fence', node, index)}
+            style={styles.messageContainer}
+          >
+            <View style={styles.headerRow}>
+              <Text style={styles.languageLabel}>
+                {language.toUpperCase()}
+                {language !== 'bash' && (
+                  <>
+                    {' ('}
+                    <Text style={styles.fileName}>
+                      {fileName || 'code.txt'}
+                    </Text>
+                    {')'}
+                  </>
+                )}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  Clipboard.setString(code);
+                  Alert.alert('Copied!');
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+              >
+                <Icon
+                  name="copy-outline"
+                  type="ionicon"
+                  size={20}
+                  color={theme.colors.textInput}
+                />
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    textTransform: 'uppercase',
+                    color: theme.colors.textInput,
+                  }}
+                >
+                  Copy
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator
+              style={{
+                backgroundColor: theme.colors.backgroundCode,
+                borderRadius: 8,
+                padding: 5,
+                marginHorizontal: 10,
+              }}
+            >
+              <SyntaxHighlighter
+                language={language}
+                style={docco}
+                highlighter="hljs"
+                customStyle={{
+                  width: Dimensions.get('window').width - 80,
+                  backgroundColor: theme.colors.backgroundCode,
+                  paddingBottom: 10,
+                  borderRadius: 8,
+                  color: theme.colors.textInput,
+                }}
+                PreTag={Text}
+                CodeTag={Text}
+              >
+                {code}
+              </SyntaxHighlighter>
+            </ScrollView>
+          </View>
+        );
+      }
+
+      return null;
+    },
+
+    code_inline: (node) => (
+      <Text
+        key={node.key}
+        style={{
+          borderRadius: 4,
+          color: theme.colors.text,
+          paddingHorizontal: 4,
+          paddingVertical: 2,
+        }}
+      >
+        {node.content}
+      </Text>
+    ),
+  };
+
+  const markdownStyle = {
+    heading1: {
+      fontSize: 20,
+      fontWeight: '700' as const,
+      color: theme.colors.text,
+    },
+    heading2: {
+      fontSize: 18,
+      fontWeight: '600' as const,
+      color: theme.colors.text,
+    },
+    heading3: {
+      fontSize: 16,
+      fontWeight: '600' as const,
+      color: theme.colors.text,
+    },
+    body: {
+      borderRadius: 8,
+      color: theme.colors.text,
+      lineHeight: 26,
+      width: Dimensions.get('window').width - 42,
+    },
+  };
+
+  return (
+    <Markdown style={markdownStyle} rules={rules}>
+      {content}
+    </Markdown>
+  );
+};
+
+export const MarkdownRenderer = memo(MarkdownRendererComponent);
