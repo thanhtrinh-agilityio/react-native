@@ -169,7 +169,7 @@ const ChatInputComponent = ({
           buttonStyle={styles.sendButton}
           containerStyle={styles.sendButton}
           aria-label="send-button"
-          disabled={!message}
+          disabled={!message || !image}
         />
       )}
     </View>

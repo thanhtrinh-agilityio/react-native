@@ -59,6 +59,7 @@ describe('useSendMessage', () => {
     expect(sendMessageModule.sendMessageToOpenRouter).toHaveBeenCalledWith(
       messages,
       undefined,
+      undefined,
     );
     expect(result.current.data).toBe(mockResponse);
   });
@@ -85,6 +86,7 @@ describe('useSendMessage', () => {
     expect(sendMessageModule.sendMessageToOpenRouter).toHaveBeenCalledWith(
       messages,
       onPartial,
+      undefined,
     );
   });
 

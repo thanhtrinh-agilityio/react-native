@@ -2,8 +2,9 @@ import * as FileSystem from 'expo-file-system';
 import { franc } from 'franc-min';
 import langs from 'langs';
 import { IMessage } from 'react-native-gifted-chat';
+
 // Types
-import { REGEX_BY_CODE_LANGUAGE } from '@/constants';
+import { REGEX_BY_CODE_LANGUAGE, REGEX_FALL_BACK } from '@/constants';
 import { GiftedMessageOverride, ParsedMessage } from '@/types';
 
 export const formatFirebaseAuthError = (code: string): string => {
@@ -185,11 +186,13 @@ export const extractErrorMessage = (err: any): string =>
         }
       })() || 'Unknown error occurred';
 
-export const extractFilename = (content = '', lang = ''): string | null => {
+export const extractFilename = (content = '', language = ''): string | null => {
   const lines = content.trim().split('\n').slice(0, 5);
+  const lang = language.toLowerCase();
+
+  // Try explicit filename in comments or code-specific hints
   const patterns =
     REGEX_BY_CODE_LANGUAGE[lang] || REGEX_BY_CODE_LANGUAGE.default;
-
   for (const line of lines) {
     for (const regex of patterns) {
       const match = line.match(regex);
@@ -197,9 +200,8 @@ export const extractFilename = (content = '', lang = ''): string | null => {
     }
   }
 
-  const fallback = /([a-zA-Z0-9_.-]+\.[a-z0-9]+)/;
   for (const line of lines) {
-    const match = line.match(fallback);
+    const match = line.match(REGEX_FALL_BACK);
     if (match) return match[1].trim();
   }
 

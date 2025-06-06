@@ -1,6 +1,7 @@
 import { TextBlock } from '@/components/';
+import { Image } from '@rneui/themed';
 import React, { memo } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 type ChatHeaderProps = {
   displayName: string;
@@ -12,6 +13,7 @@ const ChatHeaderComponent = ({ displayName }: ChatHeaderProps) => {
       <Image
         source={require('@/assets/images/robot.png')}
         style={styles.image}
+        testID="image-robot"
       />
       <TextBlock h2 type="title" style={styles.text}>
         Hello, {displayName}! {'\n'}Am ready to help you

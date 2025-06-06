@@ -24,7 +24,6 @@ const ChatMessage = ({
     <GiftedChat
       messages={messages}
       renderMessage={renderMessage}
-      onSend={() => {}}
       user={{
         _id: 1,
         name: disPlayName,
@@ -35,7 +34,6 @@ const ChatMessage = ({
       alwaysShowSend
       renderInputToolbar={() => null}
       renderSend={renderSend}
-      renderChatEmpty={() => null}
       invertibleScrollViewProps={{ scrollEnabled: false }}
       messagesContainerStyle={{ flexGrow: 1 }}
       {...rest}
