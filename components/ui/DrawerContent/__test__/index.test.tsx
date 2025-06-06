@@ -8,10 +8,25 @@ import * as db from '@/db';
 import { MOCK_CHAT_HISTORY } from '@/mocks';
 
 // Components
+import { Alert } from 'react-native';
 import { DrawerContent } from '..';
+const mockLogout = jest.fn();
 
 const mockReplace = jest.fn();
-const mockLogout = jest.fn();
+
+jest.mock('@/services/authService', () => {
+  return {
+    __esModule: true,
+    logout: jest.fn(), // named export
+  };
+});
+
+jest.mock('expo-router', () => ({
+  router: {
+    replace: jest.fn(),
+  },
+}));
+
 // Mocks
 jest.mock('firebase/auth', () => ({
   getAuth: () => ({
@@ -37,6 +52,8 @@ jest.mock('@/services/authService', () => ({
   __esModule: true,
   logout: mockLogout,
 }));
+
+jest.spyOn(Alert, 'alert');
 
 describe('DrawerContent', () => {
   const mockNavigate = jest.fn();

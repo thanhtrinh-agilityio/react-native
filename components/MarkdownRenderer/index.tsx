@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Markdown from 'react-native-markdown-display';
+import Markdown, { ASTNode, RenderRules } from 'react-native-markdown-display';
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import { docco } from 'react-syntax-highlighter/styles/hljs';
 
@@ -67,9 +67,8 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
 
   const getKey = (prefix: string, node: any, index?: number) =>
     `${prefix}-${node.key ?? index ?? JSON.stringify(node)}`;
-
   const renderHeading = (
-    node: any,
+    node: ASTNode,
     index: number,
     level: number,
     currentHeadingRef: RefObject<{
@@ -81,9 +80,8 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
     } | null>,
     skipFenceIndexRef: RefObject<number | null>,
   ) => {
-    const headingText = node.children?.[0]?.children?.[0]?.content || '';
+    const headingText = node?.children?.[0]?.children?.[0]?.content || '';
 
-    // Check xem có phải heading code (file) không
     const isCodeHeading = REGEX_CODE_LANGUAGE.test(headingText);
 
     if (isCodeHeading) {
@@ -108,33 +106,27 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
     );
   };
 
-  const rules = {
-    heading3: (node, children, parent, index) =>
-      renderHeading(node, index, 3, currentHeadingRef, skipFenceIndexRef),
-    heading4: (node, children, parent, index) =>
-      renderHeading(node, index, 4, currentHeadingRef, skipFenceIndexRef),
+  const rules: RenderRules = {
+    heading2: (node) =>
+      renderHeading(node, node.index, 2, currentHeadingRef, skipFenceIndexRef),
+    heading3: (node) =>
+      renderHeading(node, node.index, 3, currentHeadingRef, skipFenceIndexRef),
+    heading4: (node) =>
+      renderHeading(node, node.index, 4, currentHeadingRef, skipFenceIndexRef),
 
-    fence: (node, index) => {
+    fence: (node, children) => {
+      const heading = currentHeadingRef.current;
       const fileName =
-        currentHeadingRef.current?.fileName ||
-        extractFilename(node.content, node.sourceInfo);
+        heading?.fileName || extractFilename(node.content, node.sourceInfo);
+      const language = node.sourceInfo || heading?.lang || 'text';
+      const code = node.content;
 
-      if (
-        (currentHeadingRef.current?.isCodeHeading ||
-          (node.sourceInfo && fileName)) &&
-        skipFenceIndexRef.current !== index
-      ) {
-        skipFenceIndexRef.current = index;
-        const language =
-          node.sourceInfo || currentHeadingRef.current?.lang || 'text';
-        const code = node.content;
+      if (skipFenceIndexRef?.current !== node.index) {
+        skipFenceIndexRef.current = node.index;
         currentHeadingRef.current = null;
 
         return (
-          <View
-            key={getKey('fence', node, index)}
-            style={styles.messageContainer}
-          >
+          <View key={getKey('fence', node)} style={styles.messageContainer}>
             <View style={styles.headerRow}>
               <Text style={styles.languageLabel}>
                 {language.toUpperCase()}
@@ -206,20 +198,30 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
 
       return null;
     },
+    code_inline: (node) => {
+      const content = node.content;
+      const isCodeHeading = REGEX_CODE_LANGUAGE.test(content);
+      if (isCodeHeading) {
+        const fileName = extractFilename(content);
+        currentHeadingRef.current = {
+          ...(currentHeadingRef.current || {}),
+          fileName,
+          text: content,
+          isCodeHeading: true,
+        };
+      }
 
-    code_inline: (node) => (
-      <Text
-        key={node.key}
-        style={{
-          borderRadius: 4,
-          color: theme.colors.text,
-          paddingHorizontal: 4,
-          paddingVertical: 2,
-        }}
-      >
-        {node.content}
-      </Text>
-    ),
+      return (
+        <Text
+          key={node.key}
+          style={{
+            color: theme.colors.text,
+          }}
+        >
+          {content}
+        </Text>
+      );
+    },
   };
 
   const markdownStyle = {
@@ -247,8 +249,8 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
   };
 
   return (
-    <Markdown style={markdownStyle} rules={rules}>
-      {content}
+    <Markdown rules={rules} style={markdownStyle}>
+      {content.trim()}
     </Markdown>
   );
 };

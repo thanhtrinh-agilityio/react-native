@@ -51,7 +51,7 @@ export default function LoadingOverlay({
             size="large"
             color={theme?.colors.primary}
           />
-          {text ? <Text style={styles.loadingText}>{text}</Text> : null}
+          {<Text style={styles.loadingText}>{text}</Text>}
         </View>
       </View>
     </Modal>
