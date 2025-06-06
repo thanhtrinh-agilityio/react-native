@@ -78,10 +78,11 @@
     "moduleNameMapper": {
       "@/assets/(.*)$": "<rootDir>/assets/$1",
       "^@/(.*)$": "<rootDir>/$1",
-      "^expo/fetch$": "<rootDir>/__mocks__/expo/fetch.ts"
+      "^expo/fetch$": "<rootDir>/__mocks__/expo/fetch.ts",
+      "^react-native-markdown-display$": "<rootDir>/__mocks__/react-native-markdown-display.tsx"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|tamagui|@tamagui|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|@rneui)|tamagui|@tamagui|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|react-native-markdown-display)"
     ],
     "collectCoverage": true,
     "collectCoverageFrom": [

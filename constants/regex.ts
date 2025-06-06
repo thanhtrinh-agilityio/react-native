@@ -18,3 +18,5 @@ export const REGEX_BY_CODE_LANGUAGE = {
     /^<!--\s*(.+\.\w+)\s*-->$/,
   ],
 };
+
+export const REGEX_FALL_BACK = /([a-zA-Z0-9_.-]+\.(jsx|tsx|[a-z]{1,5}))/i;
