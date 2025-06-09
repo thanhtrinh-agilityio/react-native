@@ -102,7 +102,7 @@ export default function ChatGPTScreen({ navigation }: any) {
   const styles = makeStyles(theme as FullTheme);
   const [isNewThread, setIsNewThread] = useState(!!isNew);
 
-  const [threadId, setThreadId] = useState<string | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(paramId as string);
   const typingTimeoutRef = useRef<number | null>(null);
   const historyRef = useRef<IMessage[]>(messages);
 

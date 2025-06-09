@@ -26,6 +26,8 @@ import {
 import { useLoading } from '@/LoadingContext';
 import { firebaseAuth } from '@/firebaseConfig';
 import { signInWithEmail, useGoogleSignIn } from '@/services/authService';
+import { formatFirebaseAuthError } from '@/utils';
+import { FirebaseError } from 'firebase/app';
 
 type FormData = {
   email: string;
@@ -161,7 +163,9 @@ export default function LoginScreen() {
         type: 'error',
         text1: 'Error',
         text2:
-          error instanceof Error ? error.message : 'An unknown error occurred',
+          error instanceof Error
+            ? formatFirebaseAuthError((error as FirebaseError).code)
+            : 'An unknown error occurred',
       });
     } finally {
       setLoading(false);

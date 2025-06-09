@@ -47,37 +47,6 @@ export const generateAvatarUrl = (name: string): string => {
   return `https://avatar.iran.liara.run/username?background=random&username=${encodedName}`;
 };
 
-// export const parseContentToMessages = (content: string): ParsedMessage[] => {
-//   const messages: ParsedMessage[] = [];
-//   const regex = /```(\w+)?\n([\s\S]*?)```/g;
-//   let lastIndex = 0;
-//   let match;
-
-//   while ((match = regex.exec(content)) !== null) {
-//     const [fullMatch, lang, code] = match;
-//     const start = match.index;
-
-//     if (start > lastIndex) {
-//       const beforeText = content.slice(lastIndex, start).trim();
-//       if (beforeText) messages.push({ text: beforeText });
-//     }
-
-//     messages.push({
-//       text: code.trim(),
-//       isCode: true,
-//       language: lang || 'text',
-//       fileName: lang ? `index.${lang}` : undefined,
-//     });
-
-//     lastIndex = regex.lastIndex;
-//   }
-
-//   const remainingText = content.slice(lastIndex).trim();
-//   if (remainingText) messages.push({ text: remainingText });
-
-//   return messages;
-// };
-
 export const convertToGiftedMessages = (
   content: string,
   override: GiftedMessageOverride = {},
