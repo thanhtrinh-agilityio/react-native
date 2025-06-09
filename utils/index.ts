@@ -25,7 +25,7 @@ export const formatFirebaseAuthError = (code: string): string => {
       return 'Password should be at least 6 characters.';
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection.';
-    case 'auth/invalid-credentials':
+    case 'auth/invalid-credential':
       return 'Email or password is incorrect.';
     default:
       return 'Something went wrong. Please try again.';
