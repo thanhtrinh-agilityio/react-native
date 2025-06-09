@@ -102,5 +102,11 @@ export const MOCK_THEME = {
     backgroundLogoutButton: '#ff612f14',
     borderLogoutButton: '#ff612f7a',
     colorLogoutButton: '#ff4c4c',
+    white: '#fff',
   },
 };
+
+export const MOCK_DATA_CAROUSEL = [
+  { key: '1', title: 'Slide 1', iconName: 'icon1', description: 'Desc 1' },
+  { key: '2', title: 'Slide 2', iconName: 'icon2', description: 'Desc 2' },
+];

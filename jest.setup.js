@@ -3,6 +3,7 @@ import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/asy
 import { MOCK_THEME } from './mocks';
 
 jest.mock('@rneui/themed', () => ({
+  ThemeProvider: ({ children }) => <>{children}</>,
   useTheme: () => ({
     theme: MOCK_THEME,
   }),
@@ -33,6 +34,20 @@ jest.mock('react-native-gifted-chat', () => ({
 
 jest.mock('@rneui/base', () => {
   return {
-    Icon: () => null, // or a simple mock component
+    Icon: () => null,
+  };
+});
+
+jest.mock('react-native-reanimated-carousel', () => {
+  const React = require('react');
+  const CarouselComponent = React.forwardRef(
+    ({ data, renderItem, onSnapToItem, ...props }, ref) => {
+      return <>{data.map((item, index) => renderItem({ item, index }))}</>;
+    },
+  );
+  CarouselComponent.displayName = 'MockCarousel';
+  return {
+    __esModule: true,
+    default: CarouselComponent,
   };
 });

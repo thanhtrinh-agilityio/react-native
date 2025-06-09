@@ -22,7 +22,7 @@ import { TextBlock } from '@/components';
 import { REGEX_CODE_LANGUAGE } from '@/constants';
 
 // Utils
-import { extractFilename } from '@/utils';
+import { extractFilename, getDefaultFileNameByLang } from '@/utils';
 
 const makeStyles = (theme: FullTheme) =>
   StyleSheet.create({
@@ -114,10 +114,13 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
     heading4: (node) =>
       renderHeading(node, node.index, 4, currentHeadingRef, skipFenceIndexRef),
 
-    fence: (node, children) => {
+    fence: (node) => {
       const heading = currentHeadingRef.current;
       const fileName =
-        heading?.fileName || extractFilename(node.content, node.sourceInfo);
+        heading?.fileName ||
+        extractFilename(node.content, node.sourceInfo) ||
+        getDefaultFileNameByLang(node.sourceInfo);
+
       const language = node.sourceInfo || heading?.lang || 'text';
       const code = node.content;
 

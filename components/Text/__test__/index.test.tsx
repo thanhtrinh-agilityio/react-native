@@ -7,6 +7,7 @@ import { TextBlock } from '../index';
 // hooks
 import { Colors } from '@/constants/colors';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { MOCK_THEME } from '@/mocks';
 
 // Mock useThemeColor hook
 jest.mock('@/hooks/useThemeColor', () => ({
@@ -17,6 +18,12 @@ describe('TextBlock Component', () => {
   beforeEach(() => {
     // Reset mock before each test
     (useThemeColor as jest.Mock).mockReset();
+    MOCK_THEME.mode = 'dark';
+    MOCK_THEME.colors.white = '#fff';
+  });
+
+  afterAll(() => {
+    MOCK_THEME.mode = 'light';
   });
 
   it('renders correctly with default type', () => {
@@ -29,7 +36,7 @@ describe('TextBlock Component', () => {
     expect(textElement).toHaveStyle({
       fontSize: 14,
       fontWeight: '400',
-      color: '#000',
+      color: '#fff',
     });
   });
 
@@ -57,7 +64,7 @@ describe('TextBlock Component', () => {
 
     const textElement = getByText('Test Custom Colors');
     expect(textElement).toBeTruthy();
-    expect(textElement).toHaveStyle({ color: '#000' });
+    expect(textElement).toHaveStyle({ color: '#fff' });
   });
 
   it('applies styles based on type', () => {
@@ -71,6 +78,21 @@ describe('TextBlock Component', () => {
       fontSize: 16,
       fontWeight: '500',
       color: 'red',
+    });
+  });
+
+  it('applies white text color in dark mode for type="default"', () => {
+    const { getByText } = render(
+      <TextBlock type="default">Dark Mode Text</TextBlock>,
+    );
+
+    const textElement = getByText('Dark Mode Text');
+
+    expect(textElement).toHaveStyle({
+      fontSize: 14,
+      fontWeight: '400',
+      lineHeight: 24,
+      color: '#fff',
     });
   });
 });
