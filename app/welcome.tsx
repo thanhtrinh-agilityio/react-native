@@ -3,13 +3,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { uuid } from 'expo-modules-core';
 import { router } from 'expo-router';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import Carousel from 'react-native-reanimated-carousel';
 import Toast from 'react-native-toast-message';
 
 // Components
-import { BaseButton, TextBlock } from '@/components';
+import { BaseButton, Carousels, TextBlock } from '@/components';
 
 // Mocks
 import { SLIDES } from '@/mocks';
@@ -141,37 +140,40 @@ const OnboardingScreen = () => {
     }
   };
 
-  const renderSlide = ({ item }: { item: (typeof SLIDES)[number] }) => (
-    <View style={[styles.containerContent]}>
-      <TextBlock
-        type="title"
-        h1
-        numberOfLines={2}
-        adjustsFontSizeToFit
-        allowFontScaling
-      >
-        {item.title}
-      </TextBlock>
-      <TextBlock type="subtitle">{item.description}</TextBlock>
+  const renderSlide = useCallback(
+    ({ item }: { item: (typeof SLIDES)[number] }) => (
+      <View style={[styles.containerContent]}>
+        <TextBlock
+          type="title"
+          h1
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          allowFontScaling
+        >
+          {item.title}
+        </TextBlock>
+        <TextBlock type="subtitle">{item.description}</TextBlock>
 
-      <BaseButton
-        iconName={item.iconName}
-        iconType="feather"
-        iconSize={40}
-        ViewComponent={LinearGradient}
-        linearGradientProps={{
-          colors: ['#3EAEFF', '#B659FF', '#0300A6'],
-          start: { x: 0, y: 0 },
-          end: { x: 1, y: 1 },
-          locations: [0, 0.495, 1],
-        }}
-        buttonStyle={styles.buttonIcon}
-        radius={100}
-        onPress={() => {
-          router.replace(ROUTES.HOME);
-        }}
-      />
-    </View>
+        <BaseButton
+          iconName={item.iconName}
+          iconType="feather"
+          iconSize={40}
+          ViewComponent={LinearGradient}
+          linearGradientProps={{
+            colors: ['#3EAEFF', '#B659FF', '#0300A6'],
+            start: { x: 0, y: 0 },
+            end: { x: 1, y: 1 },
+            locations: [0, 0.495, 1],
+          }}
+          buttonStyle={styles.buttonIcon}
+          radius={100}
+          onPress={() => {
+            router.replace(ROUTES.HOME);
+          }}
+        />
+      </View>
+    ),
+    [styles],
   );
 
   return (
@@ -195,16 +197,13 @@ const OnboardingScreen = () => {
         </View>
 
         {carouselWidth !== null && (
-          <Carousel
-            ref={carouselRef}
-            width={carouselWidth}
+          <Carousels
+            carouselRef={carouselRef}
+            carouselWidth={carouselWidth}
             data={SLIDES}
-            autoPlay
-            loop
-            key={currentIndex}
-            scrollAnimationDuration={2000}
-            onSnapToItem={(index) => setCurrentIndex(index)}
-            renderItem={renderSlide}
+            currentIndex={currentIndex}
+            setCurrentIndex={setCurrentIndex}
+            renderSlide={renderSlide}
             style={styles.carousel}
           />
         )}

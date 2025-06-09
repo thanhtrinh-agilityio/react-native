@@ -1,4 +1,5 @@
 export * from './Button';
+export * from './Carousel';
 export * from './Chat';
 export * from './ChatHeader';
 export * from './ChatInput';

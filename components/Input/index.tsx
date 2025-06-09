@@ -2,7 +2,6 @@ import { FullTheme, Icon, Image, Input, useTheme } from '@rneui/themed';
 import React, { memo, useState } from 'react';
 
 // themes
-import { Colors } from '@/constants/colors';
 
 // types
 import { TextInputProps } from '@/types';
@@ -79,7 +78,7 @@ const InputComponent = ({
             type={leftIconType}
             name={leftIconName}
             size={20}
-            color={Colors['light'].icon}
+            color={theme.colors.icon}
           />
         ) : image ? (
           <Image

@@ -114,4 +114,19 @@ describe('useSuggestions hook', () => {
     expect(result.current.loading).toBe(false);
     expect(result.current.suggestions).toEqual([]);
   });
+
+  it('clears suggestions when isNewChat becomes true', () => {
+    const { result, rerender } = renderHook(
+      ({ isNewChat }) => useSuggestions(isNewChat),
+      { initialProps: { isNewChat: false } },
+    );
+
+    act(() => {
+      result.current.fetchSuggestions('Hello');
+    });
+
+    rerender({ isNewChat: true });
+
+    expect(result.current.suggestions).toEqual([]);
+  });
 });

@@ -4,7 +4,11 @@ import langs from 'langs';
 import { IMessage } from 'react-native-gifted-chat';
 
 // Types
-import { REGEX_BY_CODE_LANGUAGE, REGEX_FALL_BACK } from '@/constants';
+import {
+  DEFAULT_CODE_LANGUAGE,
+  REGEX_BY_CODE_LANGUAGE,
+  REGEX_FALL_BACK,
+} from '@/constants';
 import { GiftedMessageOverride, ParsedMessage } from '@/types';
 
 export const formatFirebaseAuthError = (code: string): string => {
@@ -206,4 +210,12 @@ export const extractFilename = (content = '', language = ''): string | null => {
   }
 
   return null;
+};
+
+export const getDefaultFileNameByLang = (lang: string) => {
+  if (!lang) return 'file.txt';
+
+  const key = lang.toLowerCase();
+
+  return DEFAULT_CODE_LANGUAGE[key] || 'file.txt';
 };

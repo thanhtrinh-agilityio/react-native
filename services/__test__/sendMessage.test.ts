@@ -223,4 +223,60 @@ describe('sendMessageToOpenRouter Service', () => {
     expect(output).toContain('');
     expect(onPartial).toHaveBeenCalled();
   });
+
+  it('should skip lines that do not start with data: and lines with empty data', async () => {
+    // Mock stream data with mixed lines
+    const chunks = [
+      `hello\n`,
+      `data:\n`,
+      `data:   \n`,
+      `data: {"choices":[{"delta":{"content":"Hello"}}]}\n`,
+      `data: [DONE]\n`,
+    ];
+
+    // Create a mock ReadableStream reader
+    let chunkIndex = 0;
+    const encoder = new TextEncoder();
+
+    const mockReader = {
+      read: jest.fn().mockImplementation(() => {
+        if (chunkIndex < chunks.length) {
+          const chunk = chunks[chunkIndex++];
+          return Promise.resolve({
+            done: false,
+            value: encoder.encode(chunk),
+          });
+        }
+        return Promise.resolve({ done: true, value: undefined });
+      }),
+    };
+
+    // Mock fetch to return a Response with a body containing getReader
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      body: {
+        getReader: () => mockReader,
+      },
+    });
+
+    const giftedMsgs: IMessage[] = [
+      { _id: '1', text: 'Hi', user: { _id: 'user1' }, createdAt: new Date() },
+    ];
+
+    const partials: string[] = [];
+    const statuses: { status: string; detail?: any }[] = [];
+
+    const { result } = sendMessageToOpenRouter(
+      giftedMsgs,
+      (partial) => partials.push(partial),
+      (status, detail) => statuses.push({ status, detail }),
+    );
+
+    const finalResult = await result;
+
+    expect(partials).toContain('Hello');
+    expect(statuses.find((s) => s.status === 'start')).toBeDefined();
+    expect(statuses.find((s) => s.status === 'done')).toBeDefined();
+    expect(finalResult).toBe('Hello');
+  });
 });
