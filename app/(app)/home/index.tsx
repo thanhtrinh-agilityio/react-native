@@ -231,8 +231,6 @@ export default function ChatGPTScreen() {
       );
 
       let isDone = false;
-      let finalReply = '';
-
       try {
         const payload = await buildOpenRouterMessages(
           historyRef.current,
@@ -255,7 +253,6 @@ export default function ChatGPTScreen() {
           onStatusChange: async (status, detail) => {
             if (status === 'done') {
               isDone = true;
-              finalReply = detail;
             }
             if (status === 'error') {
               Toast.show({
