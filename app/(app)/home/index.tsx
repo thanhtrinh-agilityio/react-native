@@ -93,7 +93,7 @@ const makeStyles = (theme: FullTheme) =>
     },
   });
 
-export default function ChatGPTScreen({ navigation }: any) {
+export default function ChatGPTScreen() {
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const user = getAuth().currentUser;
