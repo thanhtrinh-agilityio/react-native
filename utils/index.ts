@@ -60,7 +60,6 @@ export const convertToGiftedMessages = (
       avatar: require('@/assets/images/logo.png'),
     },
     text: content,
-    // parsedParts: parseContentToMessages(content),
   } as IMessage & { parsedParts: ParsedMessage[] },
 ];
 
