@@ -112,7 +112,9 @@ export default function ChatGPTScreen({ navigation }: any) {
     cancel,
   } = useSendMessage();
 
-  const { suggestions, fetchSuggestions, loading } = useSuggestions(!!isNew);
+  const { suggestions, fetchSuggestions, loading } = useSuggestions(
+    !!isNew || !chatInput,
+  );
   const scrollRef = useRef<ScrollView>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const disPlayName = user?.displayName || getNameFromEmail(user?.email || '');
