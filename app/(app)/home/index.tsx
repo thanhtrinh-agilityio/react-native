@@ -414,7 +414,7 @@ export default function ChatGPTScreen({ navigation }: any) {
           <>
             <ChatHeader displayName={disPlayName} />
             <PromptCardList data={PROMPT_LIST} onGetAnswer={handleGetAnswer} />
-            {suggestions.length > 0 && (
+            {suggestions.length > 0 && chatInput.length > 0 && (
               <SuggestInput
                 suggestions={suggestions}
                 onSuggestionPress={handleGetSuggestedInput}
