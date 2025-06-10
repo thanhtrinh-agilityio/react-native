@@ -46,7 +46,7 @@ import { PROMPT_LIST } from '@/mocks';
 import { IMessageWithParsedParts, PromptData } from '@/types';
 
 // Constants
-import { Colors, ROUTES } from '@/constants';
+import { ROUTES } from '@/constants';
 
 // DB
 import { loadMessages, loadThreadIds, saveMessages } from '@/db';
@@ -392,7 +392,7 @@ export default function ChatGPTScreen({ navigation }: any) {
   const renderLoading = useCallback(
     () => (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={Colors.light.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     ),
     [],
@@ -430,7 +430,7 @@ export default function ChatGPTScreen({ navigation }: any) {
               justifyContent: 'center',
             }}
           >
-            <ActivityIndicator size="large" color={Colors.light.primary} />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
           </View>
         ) : (
           <Chat
