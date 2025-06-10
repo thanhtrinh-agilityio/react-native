@@ -47,3 +47,13 @@
    ```bash
    yarn start
    ```
+
+   6.Environment Variables (.env)
+
+   | Key                            | Value                                                |
+   | ------------------------------ | ---------------------------------------------------- |
+   | EXPO_PUBLIC_STORYBOOK_ENABLED  | boolean                                              |
+   | EXPO_PUBLIC_OPENROUTER_API_KEY | key register in openrouter.ai `sk-or-v1-d219a755...` |
+   | EXPO_PUBLIC_OPENROUTER_MODEL   | meta-llama/llama-4-maverick:free                     |
+   | EXPO_PUBLIC_OPENROUTER_API_URL | https://openrouter.ai/api/v1/chat/completions        |
+   | EXPO_PUBLIC_OPENROUTER_TITLE   | App title                                            |

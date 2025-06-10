@@ -32,6 +32,7 @@ yarn-error.*
 coverage
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
