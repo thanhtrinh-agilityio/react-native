@@ -272,7 +272,7 @@ export default function LoginScreen() {
                 <View style={{ position: 'relative' }}>
                   <TextInput
                     label="Password"
-                    placeholder="Create strong password"
+                    placeholder="Create your password"
                     secureTextEntry={secureText}
                     leftIconName="lock-closed-outline"
                     leftIconType="ionicon"
@@ -301,7 +301,11 @@ export default function LoginScreen() {
                         )}
                       </View>
                     }
-                    <TextBlock variant="warning" disabled>
+                    <TextBlock
+                      variant="warning"
+                      style={styles.resetPassword}
+                      disabled
+                    >
                       Reset password
                     </TextBlock>
                   </View>
