@@ -1,23 +1,63 @@
-import { Icon, useTheme } from '@rneui/themed';
+import { FullTheme, Icon, Image, useTheme } from '@rneui/themed';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Easing, StyleSheet, View } from 'react-native';
 
 // Components
-import { BaseButton, TextInput } from '@/components';
+import { BaseButton, TextBlock, TextInput } from '@/components';
 import { MESSAGE } from '@/constants/message';
+import { SpeedDial } from '@rneui/base';
 
 type ChatInputProps = {
   loading?: boolean;
   message?: string;
+  threadId?: string;
+  isUploadImage?: boolean;
+  isUploadFile?: boolean;
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onChangeMessage: (message: string) => void;
-  onSend: (message: string, image?: string) => void;
+  onSend: (message: string, image?: string, filePdf?: any) => void;
   onStopStream?: () => void;
 };
+
+const makeStyles = (theme: FullTheme) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 10,
+      width: '100%',
+      paddingHorizontal: 5,
+      paddingBottom: 10,
+      paddingTop: 40,
+      position: 'relative',
+      borderRadius: 20,
+      borderWidth: 0.1,
+      borderColor: theme.colors.text,
+    },
+    iconButton: {
+      width: 52,
+      height: 52,
+      borderRadius: 100,
+      backgroundColor: theme.colors.primary,
+    },
+    sendButton: {
+      width: 52,
+      height: 52,
+      borderRadius: 100,
+    },
+  });
 
 const ChatInputComponent = ({
   loading = true,
   message = '',
+  threadId = '',
+  isUploadImage = true,
+  isUploadFile = true,
+  open,
+  setOpen,
   onChangeMessage,
   onSend,
   onStopStream,
@@ -25,7 +65,16 @@ const ChatInputComponent = ({
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const placeholderAnim = useRef(new Animated.Value(0)).current;
   const [image, setImage] = useState('');
+  const [filePdf, setFilePdf] = useState<any>(null);
   const { theme } = useTheme();
+  const styles = makeStyles(theme as FullTheme);
+
+  useEffect(() => {
+    if (threadId) {
+      setFilePdf(null);
+      setImage('');
+    }
+  }, [threadId]);
 
   useEffect(() => {
     let rotateAnimation: Animated.CompositeAnimation | null = null;
@@ -76,18 +125,43 @@ const ChatInputComponent = ({
 
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      setFilePdf('');
+      setOpen(false);
+    }
+  };
+
+  const handleUploadFilePDF = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled) {
+        setFilePdf(result.assets[0]!);
+        setImage('');
+        setOpen(false);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong');
     }
   };
 
   const handleSend = useCallback(() => {
-    onSend(message, image);
+    onSend(message, image, filePdf!);
     setImage('');
-  }, [image, message, onSend]);
+    setFilePdf(null);
+  }, [filePdf, image, message, onSend]);
 
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
+
+  // Remove uploaded file
+  const handleRemoveFileUpload = useCallback(() => {
+    setImage('');
+    setFilePdf(null);
+  }, []);
 
   const renderLoading = useCallback(() => {
     return (
@@ -103,26 +177,99 @@ const ChatInputComponent = ({
 
   return (
     <View style={styles.container}>
-      {/* Upload Image Button */}
-      <BaseButton
-        type="clear"
-        onPress={handleImageUpload}
-        icon={<Icon name="image" type="feather" color="#6366f1" />}
-        buttonStyle={styles.iconButton}
-        containerStyle={styles.iconButton}
-        testID="upload-image-button"
-        aria-label="upload-image-button"
-      />
+      <View
+        style={{
+          position: 'absolute',
+          right: 0,
+          left: 0,
+          bottom: 90,
+          alignItems: 'center',
+        }}
+      >
+        {(image || filePdf) && (
+          <Icon
+            name="close"
+            type="ionicon"
+            color={theme?.colors?.text}
+            onPress={handleRemoveFileUpload}
+            size={14}
+          />
+        )}
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={{ width: 30, height: 30, resizeMode: 'contain' }}
+          />
+        ) : filePdf ? (
+          <>
+            <TextBlock
+              style={{
+                fontWeight: 'bold',
+                fontSize: 10,
+                color: theme.colors.text,
+              }}
+            >
+              {filePdf.name}- {Math.round(parseInt(filePdf.size!) / 1024)} KB
+            </TextBlock>
+          </>
+        ) : null}
+      </View>
+
+      <View
+        style={{
+          width: 52,
+          height: 52,
+          marginRight: 10,
+          marginTop: 18,
+        }}
+      >
+        <SpeedDial
+          isOpen={open}
+          icon={{ name: 'edit', color: '#fff' }}
+          openIcon={{
+            name: 'close',
+            color: '#fff',
+          }}
+          onOpen={() => setOpen(true)}
+          onClose={() => setOpen(false)}
+          color={theme?.colors?.primary}
+          placement="left"
+          disabled={loading}
+          overlayColor="transparent"
+        >
+          <SpeedDial.Action
+            icon={{
+              name: 'image',
+              color: '#fff',
+            }}
+            onPress={handleImageUpload}
+            color={theme?.colors?.primary}
+            style={{
+              marginLeft: 15,
+            }}
+            disabled={!isUploadImage}
+          />
+          <SpeedDial.Action
+            icon={{ name: 'picture-as-pdf', color: '#fff' }}
+            onPress={handleUploadFilePDF}
+            color={theme?.colors?.primary}
+            style={{
+              marginLeft: 15,
+            }}
+            disabled={!isUploadFile}
+          />
+        </SpeedDial>
+      </View>
 
       {/* Input Field */}
-      <View style={{ width: '80%' }}>
+      <View style={{ flex: 1 }}>
         <View style={{ position: 'relative' }}>
-          {loading && !message && (
+          {loading && (
             <Animated.Text
               style={{
                 position: 'absolute',
                 left: 32,
-                top: 45,
+                top: 15,
                 color: '#aaa',
                 opacity: placeholderOpacity,
                 zIndex: 1,
@@ -138,13 +285,12 @@ const ChatInputComponent = ({
             editable={!loading}
             onChangeText={onChangeMessage}
             variant="plain"
-            image={image}
             verticalAlign="middle"
             multiline
             testID="chat-input"
             numberOfLines={4}
             inputContainerStyle={{
-              marginTop: 30,
+              minHeight: 52,
             }}
             {...(loading && { rightIcon: renderLoading() })}
           />
@@ -169,32 +315,11 @@ const ChatInputComponent = ({
           buttonStyle={styles.sendButton}
           containerStyle={styles.sendButton}
           aria-label="send-button"
-          disabled={!message && !image}
+          disabled={!message && !image && !filePdf}
         />
       )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  iconButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 100,
-  },
-  sendButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 100,
-  },
-});
 
 export const ChatInput = memo(ChatInputComponent);

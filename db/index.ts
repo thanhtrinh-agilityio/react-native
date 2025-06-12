@@ -16,6 +16,7 @@ export const getDb = async () => {
 
 export const initDatabase = async () => {
   const db = await getDb();
+
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS threads (
       id TEXT PRIMARY KEY NOT NULL,
@@ -24,19 +25,44 @@ export const initDatabase = async () => {
       createdAt INTEGER
     );
     CREATE TABLE IF NOT EXISTS messages (
-      id        TEXT NOT NULL,
-      threadId  TEXT NOT NULL,
-      role      TEXT NOT NULL,
-      content   TEXT,
-      image     TEXT,
-      createdAt INTEGER,
-      userId    INTEGER,
-      userName   TEXT,
-      userAvatar TEXT,
+      id          TEXT NOT NULL,
+      threadId    TEXT NOT NULL,
+      role        TEXT NOT NULL,
+      content     TEXT,
+      image       TEXT,
+      fileName    TEXT,
+      fileUri     TEXT,
+      fileMime    TEXT,
+      fileSize    INTEGER,
+      createdAt   INTEGER,
+      userId      INTEGER,
+      userName    TEXT,
+      userAvatar  TEXT,
       PRIMARY KEY (id, threadId),
       FOREIGN KEY (threadId) REFERENCES threads(id) ON DELETE CASCADE
     );
   `);
+
+  const columnsToAdd = [
+    { name: 'fileName', type: 'TEXT' },
+    { name: 'fileUri', type: 'TEXT' },
+    { name: 'fileMime', type: 'TEXT' },
+    { name: 'fileSize', type: 'INTEGER' },
+  ];
+
+  for (const col of columnsToAdd) {
+    try {
+      await db.execAsync(
+        `ALTER TABLE messages ADD COLUMN ${col.name} ${col.type}`,
+      );
+      console.log(`✅ Added column: ${col.name}`);
+    } catch (err: any) {
+      if (err.message.includes('duplicate column name')) {
+      } else {
+        throw err;
+      }
+    }
+  }
 };
 
 export const saveMessages = async (
@@ -45,14 +71,13 @@ export const saveMessages = async (
   msgs: IMessage[],
 ) => {
   if ((!msgs || !msgs.length) && !threadId && !userEmail) {
-    console.warn('⚠️ saveMessages called with empty or undefined msgs');
+    console.warn('saveMessages called with empty or undefined msgs');
     return;
   }
   const db = await getDb();
 
   try {
     await db.withExclusiveTransactionAsync(async (tx) => {
-      // Save or update thread
       await tx.runAsync(
         `INSERT INTO threads (id, userEmail, title, createdAt)
          VALUES ($id, $email, $title, $createdAt)
@@ -64,15 +89,20 @@ export const saveMessages = async (
           $createdAt: Date.now(),
         },
       );
+
       for (const m of msgs) {
         await tx?.runAsync(
           `INSERT INTO messages
-              (id, threadId, role, content, image, createdAt, userId, userName, userAvatar)
+              (id, threadId, role, content, image, fileName, fileUri, fileMime, fileSize, createdAt, userId, userName, userAvatar)
             VALUES
-              ($id, $threadId, $role, $content, $image, $createdAt, $userId, $userName, $userAvatar)
+              ($id, $threadId, $role, $content, $image, $fileName, $fileUri, $fileMime, $fileSize, $createdAt, $userId, $userName, $userAvatar)
             ON CONFLICT(id, threadId) DO UPDATE SET
               content     = excluded.content,
               image       = excluded.image,
+              fileName    = excluded.fileName,
+              fileUri     = excluded.fileUri,
+              fileMime    = excluded.fileMime,
+              fileSize    = excluded.fileSize,
               createdAt   = excluded.createdAt,
               userId      = excluded.userId,
               userName    = excluded.userName,
@@ -83,6 +113,10 @@ export const saveMessages = async (
             $role: m.user?._id === 1 ? 'user' : 'assistant',
             $content: m.text,
             $image: m.image ?? null,
+            $fileName: m.file?.name ?? null,
+            $fileUri: m.file?.uri ?? null,
+            $fileMime: m.file?.mimeType ?? null,
+            $fileSize: m.file?.size ?? null,
             $createdAt:
               typeof m.createdAt === 'number'
                 ? m.createdAt
@@ -120,6 +154,15 @@ export const loadMessages = async (threadId: string) => {
           ? row.userAvatar
           : 'https://avatar.iran.liara.run/public/username?username=RakGPT',
     },
+    file:
+      row.fileUri != null
+        ? {
+            name: row.fileName,
+            uri: row.fileUri,
+            mimeType: row.fileMime,
+            size: row.fileSize,
+          }
+        : undefined,
   }));
 };
 
@@ -144,10 +187,16 @@ export const loadUserThreadsWithFirstMessage = async (userEmail: string) => {
       m.id AS messageId,
       m.content AS firstMessageText,
       m.createdAt AS firstMessageCreatedAt,
-      m.role AS firstMessageRole
+      m.role AS firstMessageRole,
+      m.userName,
+      m.userAvatar,
+      m.fileName,
+      m.fileUri,
+      m.fileMime,
+      m.fileSize
     FROM threads t
     LEFT JOIN (
-      SELECT threadId, id, content, createdAt, role
+      SELECT threadId, id, content, createdAt, role, userName, userAvatar, fileName, fileUri, fileMime, fileSize
       FROM messages
       WHERE (threadId, createdAt) IN (
         SELECT threadId, MIN(createdAt)
@@ -172,12 +221,24 @@ export const loadUserThreadsWithFirstMessage = async (userEmail: string) => {
           createdAt: new Date(row.firstMessageCreatedAt),
           user: {
             _id: row.firstMessageRole === 'user' ? 1 : 2,
-            name: row.firstMessageRole === 'user' ? 'User' : 'Rak-GPT',
+            name:
+              row.firstMessageRole === 'user'
+                ? row.userName ?? 'User'
+                : 'Rak-GPT',
             avatar:
               row.firstMessageRole === 'user'
-                ? undefined
+                ? row.userAvatar
                 : 'https://avatar.iran.liara.run/public/username?username=RakGPT',
           },
+          file:
+            row.fileUri != null
+              ? {
+                  name: row.fileName,
+                  uri: row.fileUri,
+                  mimeType: row.fileMime,
+                  size: row.fileSize,
+                }
+              : undefined,
         }
       : null,
   }));

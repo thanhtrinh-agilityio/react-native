@@ -1,4 +1,4 @@
-import { FullTheme, Icon, Image, Input, useTheme } from '@rneui/themed';
+import { FullTheme, Icon, Input, useTheme } from '@rneui/themed';
 import React, { memo, useState } from 'react';
 
 // themes
@@ -57,7 +57,6 @@ const InputComponent = ({
   onRightIconPress,
   variant = 'default',
   inputContainerStyle,
-  image,
   rightIcon,
   errorMessage,
   ...rest
@@ -79,11 +78,6 @@ const InputComponent = ({
             name={leftIconName}
             size={20}
             color={theme.colors.icon}
-          />
-        ) : image ? (
-          <Image
-            source={{ uri: image }}
-            style={{ width: 24, height: 24, resizeMode: 'contain' }}
           />
         ) : undefined
       }

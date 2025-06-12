@@ -14,5 +14,6 @@ declare module '@rneui/themed' {
     backgroundCode?: string;
     tint?: string;
     text?: string;
+    icon?: string;
   }
 }

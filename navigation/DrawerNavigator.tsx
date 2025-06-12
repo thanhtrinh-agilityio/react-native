@@ -149,6 +149,7 @@ const DrawerNavigator = () => {
 
             return {
               title: computedTitle,
+
               drawerLabel: 'Home',
               headerLeft: () => <HeaderLeft />,
               headerRight: () => <HeaderRight />,

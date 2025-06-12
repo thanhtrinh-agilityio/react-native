@@ -68,6 +68,7 @@ export const buildOpenRouterMessages = async (
   history: IMessage[],
   userText: string,
   imageUri?: string | null,
+  filePdf?: any | null,
 ) => {
   const msgs: any[] = [
     {
@@ -82,7 +83,6 @@ export const buildOpenRouterMessages = async (
 
   for (const m of chronological) {
     const role = m.user._id === 1 ? 'user' : 'assistant';
-
     if (m.image) {
       msgs.push({
         role,
@@ -91,29 +91,71 @@ export const buildOpenRouterMessages = async (
           { type: 'image_url', image_url: { url: m.image } },
         ],
       });
-    } else {
-      msgs.push({ role, content: m.text });
     }
+    if (m.file!) {
+      const base64 = await FileSystem.readAsStringAsync(m.file.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const base64PDF = `data:application/pdf;base64,${base64}`;
+      msgs.push({
+        role,
+        content: [
+          { type: 'text', text: userText || '' },
+          {
+            type: 'file',
+            file: {
+              filename: m.file?.name,
+              file_data: base64PDF,
+            },
+          },
+        ],
+      });
+    }
+    msgs.push({ role, content: m.text });
   }
 
-  if (!imageUri) {
+  if (!imageUri && !filePdf) {
     msgs.push({ role: 'user', content: userText });
   } else {
-    const base64 = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    const mime = imageUri.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
-    const dataUrl = `data:image/${mime};base64,${base64}`;
+    if (imageUri) {
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const mime = imageUri.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+      const dataUrl = `data:image/${mime};base64,${base64}`;
 
-    msgs.push({
-      role: 'user',
-      content: [
-        { type: 'text', text: userText || ' ' },
-        { type: 'image_url', image_url: { url: dataUrl } },
-      ],
-    });
+      msgs.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: userText || ' ' },
+          { type: 'image_url', image_url: { url: dataUrl } },
+        ],
+      });
+    }
+
+    if (filePdf.uri) {
+      const base64 = await FileSystem.readAsStringAsync(filePdf.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const base64PDF = `data:application/pdf;base64,${base64}`;
+      msgs.push({
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: userText || 'What are the main points in this document?',
+          },
+          {
+            type: 'file',
+            file: {
+              filename: filePdf.name,
+              file_data: base64PDF,
+            },
+          },
+        ],
+      });
+    }
   }
-
   return msgs;
 };
 

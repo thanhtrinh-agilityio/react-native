@@ -22,9 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.thanh.trinhagilityo.rakgpt",
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+      "permissions": ["android.permission.RECORD_AUDIO"]
     },
     "web": {
       "bundler": "metro",
@@ -48,7 +46,13 @@
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

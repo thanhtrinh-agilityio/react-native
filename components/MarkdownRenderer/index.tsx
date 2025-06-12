@@ -225,6 +225,24 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
         </Text>
       );
     },
+    em: (node, children, parent, styles) => {
+      if (
+        node?.children?.[0]?.children[0] &&
+        node.children[0].type === 'strong'
+      ) {
+        return (
+          <Text key={node.key} style={[styles.body, styles.em, styles.strong]}>
+            {node.children[0].children[0].content}
+          </Text>
+        );
+      }
+
+      return (
+        <Text key={node.key} style={styles.em}>
+          {children}
+        </Text>
+      );
+    },
   };
 
   const markdownStyle = {

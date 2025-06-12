@@ -8,7 +8,6 @@ export type TextInputProps = InputProps & {
   rightIconName?: string;
   onRightIconPress?: () => void;
   variant?: 'default' | 'plain';
-  image?: string;
 };
 
 export type Suggestion = {
@@ -22,10 +21,17 @@ export type ParsedMessage = {
   isCode?: boolean;
   language?: string;
   fileName?: string;
+  fileUrl?: string;
 };
 
 export interface IMessageWithParsedParts extends IMessage {
   parsedParts?: ParsedMessage[];
+  file?: {
+    name?: string;
+    uri?: string;
+    mimeType?: string;
+    size?: string;
+  };
 }
 
 export type GiftedMessageOverride = {

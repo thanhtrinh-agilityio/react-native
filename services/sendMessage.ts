@@ -15,7 +15,6 @@ export function sendMessageToOpenRouter(
   cancel: () => void;
 } {
   const controller = new AbortController();
-
   const result = (async () => {
     try {
       const res = await fetch(OPENROUTER_CONFIG.url!, {
@@ -31,6 +30,16 @@ export function sendMessageToOpenRouter(
           model: OPENROUTER_CONFIG.model,
           stream: true,
           messages: giftedMsgs,
+          ...(giftedMsgs.some((m) => m.content[1].type === 'file') && {
+            plugins: [
+              {
+                id: 'file-parser',
+                pdf: {
+                  engine: 'pdf-text',
+                },
+              },
+            ],
+          }),
         }),
       });
 

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { FullTheme, useTheme } from '@rneui/themed';
-import { router, useGlobalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useGlobalSearchParams } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 import React, {
   useCallback,
@@ -12,8 +12,11 @@ import React, {
 import {
   ActivityIndicator,
   Image,
+  Keyboard,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import {
@@ -105,6 +108,7 @@ export default function ChatGPTScreen() {
   const [threadId, setThreadId] = useState<string | null>(paramId as string);
   const typingTimeoutRef = useRef<number | null>(null);
   const historyRef = useRef<IMessage[]>(messages);
+  const [isSpeedDialOpen, setIsSpeedDialOpen] = useState(false);
 
   const {
     mutateAsync: sendMessage,
@@ -121,6 +125,12 @@ export default function ChatGPTScreen() {
   const avatarUrl = useMemo(
     () => user?.photoURL || generateAvatarUrl(disPlayName),
     [user, disPlayName],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsSpeedDialOpen(false);
+    }, []),
   );
 
   useEffect(() => {
@@ -140,7 +150,7 @@ export default function ChatGPTScreen() {
         const threadExists = threadIds?.includes(threadId);
 
         if (!threadExists) return;
-
+        setIsSpeedDialOpen(false);
         setIsLoadingMessages(true);
         const msgs = await loadMessages(threadId);
         setThreadId(threadId);
@@ -159,7 +169,7 @@ export default function ChatGPTScreen() {
         return;
       }
 
-      if (isNew) {
+      if (!!isNew) {
         initializeNewThread();
         return;
       }
@@ -168,7 +178,6 @@ export default function ChatGPTScreen() {
         await loadExistingThread(user.email, paramId as string);
       }
     };
-
     setupChatThread();
   }, [paramId, user, isNewThread]);
 
@@ -190,9 +199,9 @@ export default function ChatGPTScreen() {
 
   // handle send message
   const handleSendMessage = useCallback(
-    async (text: string, imageUri?: string | null) => {
+    async (text: string, imageUri?: string | null, filePdf?: any) => {
       const trimmed = text.trim();
-      if (!trimmed && !imageUri) return;
+      if (!trimmed && !imageUri && !filePdf) return;
 
       const userMsg: IMessage = {
         _id: Date.now().toString(),
@@ -204,6 +213,14 @@ export default function ChatGPTScreen() {
           avatar: avatarUrl,
         },
         image: imageUri || '',
+        ...(filePdf && {
+          file: {
+            name: filePdf.name,
+            uri: filePdf.uri,
+            mimeType: filePdf.mimeType,
+            size: filePdf.size,
+          },
+        }),
       };
 
       setMessages((prev) => GiftedChat.append(prev, [userMsg]));
@@ -236,8 +253,8 @@ export default function ChatGPTScreen() {
           historyRef.current,
           trimmed,
           imageUri,
+          filePdf,
         );
-
         const reply = await sendMessage({
           msgs: payload,
           onMessagePartial: (partialText) => {
@@ -326,6 +343,14 @@ export default function ChatGPTScreen() {
     setChatInput((prev) => prev + ' ' + label);
   }, []);
 
+  // handle outside press
+  const handleOutsidePress = useCallback(() => {
+    Keyboard.dismiss();
+    if (isSpeedDialOpen) {
+      setIsSpeedDialOpen(false);
+    }
+  }, [isSpeedDialOpen]);
+
   const renderSend = useCallback(
     (props: any) => (
       <Send {...props}>
@@ -378,6 +403,25 @@ export default function ChatGPTScreen() {
                 resizeMode="cover"
               />
             )}
+            {currentMessage?.file && (
+              <View
+                style={{
+                  padding: 10,
+                  borderRadius: 10,
+                  maxWidth: 250,
+                }}
+              >
+                <TouchableOpacity>
+                  <TextBlock style={{ fontWeight: 'bold' }}>
+                    {currentMessage.file.name}
+                  </TextBlock>
+                  <TextBlock style={{ color: '#888', fontSize: 12 }}>
+                    {currentMessage.file.mimeType} -{' '}
+                    {Math.round(parseInt(currentMessage.file.size!) / 1024)} KB
+                  </TextBlock>
+                </TouchableOpacity>
+              </View>
+            )}
             <MarkdownRenderer content={currentMessage.text} />
           </View>
         </View>
@@ -395,61 +439,85 @@ export default function ChatGPTScreen() {
     [],
   );
 
+  const { isEnableFile, isEnableImage } = useMemo(() => {
+    const hasImage = messages?.some((msg) => !!msg.image) || false;
+    const hasFile = messages?.some((msg) => !!msg.file) || false;
+
+    if (!hasImage && !hasFile) {
+      return { isEnableImage: true, enableisEnableFileile: true };
+    }
+
+    return {
+      isEnableImage: hasImage,
+      isEnableFile: hasFile,
+    };
+  }, [messages]);
+
   return (
-    <View style={styles.container}>
-      <ScrollView
-        ref={scrollRef}
-        onContentSizeChange={() =>
-          scrollRef.current?.scrollToEnd({ animated: true })
-        }
-        contentContainerStyle={{
-          flexGrow: 1,
-          backgroundColor: theme.colors.background,
-        }}
-      >
-        {messages?.length === 0 ? (
-          <>
-            <ChatHeader displayName={disPlayName} />
-            <PromptCardList data={PROMPT_LIST} onGetAnswer={handleGetAnswer} />
-            {suggestions.length > 0 && chatInput.length > 0 && (
-              <SuggestInput
-                suggestions={suggestions}
-                onSuggestionPress={handleGetSuggestedInput}
-                isLoading={loading}
+    <TouchableWithoutFeedback onPress={handleOutsidePress}>
+      <View style={styles.container}>
+        <ScrollView
+          ref={scrollRef}
+          onContentSizeChange={() =>
+            scrollRef.current?.scrollToEnd({ animated: true })
+          }
+          contentContainerStyle={{
+            flexGrow: 1,
+            backgroundColor: theme.colors.background,
+          }}
+        >
+          {messages?.length === 0 ? (
+            <>
+              <ChatHeader displayName={disPlayName} />
+              <PromptCardList
+                data={PROMPT_LIST}
+                onGetAnswer={handleGetAnswer}
               />
-            )}
-          </>
-        ) : isLoadingMessages ? (
-          <View
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
-        ) : (
-          <Chat
-            messages={messages}
-            disPlayName={disPlayName}
-            avatarUrl={avatarUrl}
-            placeholder="Ask what you want..."
-            renderMessage={renderMessage}
-            renderSend={renderSend}
-            renderLoading={renderLoading}
+              {suggestions.length > 0 && chatInput.length > 0 && (
+                <SuggestInput
+                  suggestions={suggestions}
+                  onSuggestionPress={handleGetSuggestedInput}
+                  isLoading={loading}
+                />
+              )}
+            </>
+          ) : isLoadingMessages ? (
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+          ) : (
+            <Chat
+              messages={messages}
+              disPlayName={disPlayName}
+              avatarUrl={avatarUrl}
+              placeholder="Ask what you want..."
+              renderMessage={renderMessage}
+              renderSend={renderSend}
+              renderLoading={renderLoading}
+            />
+          )}
+        </ScrollView>
+        <View style={styles.inputContainer}>
+          <ChatInput
+            loading={isLoading}
+            message={chatInput}
+            threadId={threadId!}
+            open={isSpeedDialOpen}
+            setOpen={setIsSpeedDialOpen}
+            isUploadImage={isEnableImage}
+            isUploadFile={isEnableFile}
+            onChangeMessage={handleChangeMessage}
+            onSend={handleSendMessage}
+            onStopStream={handleStopStreaming}
           />
-        )}
-      </ScrollView>
-      <View style={styles.inputContainer}>
-        <ChatInput
-          loading={isLoading}
-          message={chatInput}
-          onChangeMessage={handleChangeMessage}
-          onSend={handleSendMessage}
-          onStopStream={handleStopStreaming}
-        />
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
