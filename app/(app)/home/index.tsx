@@ -178,6 +178,7 @@ export default function ChatGPTScreen() {
         await loadExistingThread(user.email, paramId as string);
       }
     };
+    setChatInput('');
     setupChatThread();
   }, [paramId, user, isNewThread]);
 

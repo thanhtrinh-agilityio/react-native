@@ -1,6 +1,6 @@
 import { Icon } from '@rneui/base';
 import { FullTheme, useTheme } from '@rneui/themed';
-import React, { memo, RefObject, useRef } from 'react';
+import React, { memo, RefObject, useMemo, useRef } from 'react';
 import {
   Alert,
   Clipboard,
@@ -64,6 +64,40 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
   } | null>(null);
 
   const skipFenceIndexRef = useRef<number | null>(null);
+
+  const formatMarkdown = (md: string) => {
+    const lines = md.split('\n');
+    const fixed: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s+```/.test(line)) {
+        fixed.push(line.trimStart());
+        continue;
+      }
+
+      if (/^```/.test(line) && i > 0 && lines[i - 1].trim() !== '') {
+        fixed.push('');
+        fixed.push(line);
+        continue;
+      }
+
+      if (
+        /^```/.test(line) &&
+        i + 1 < lines.length &&
+        lines[i + 1].trim() !== '' &&
+        !/^```/.test(lines[i + 1])
+      ) {
+        fixed.push(line);
+        fixed.push('');
+        continue;
+      }
+
+      fixed.push(line);
+    }
+
+    return fixed.join('\n');
+  };
 
   const getKey = (prefix: string, node: any, index?: number) =>
     `${prefix}-${node.key ?? index ?? JSON.stringify(node)}`;
@@ -176,6 +210,7 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
                 borderRadius: 8,
                 padding: 5,
                 marginHorizontal: 10,
+                minHeight: 10,
               }}
             >
               <SyntaxHighlighter
@@ -225,24 +260,6 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
         </Text>
       );
     },
-    em: (node, children, parent, styles) => {
-      if (
-        node?.children?.[0]?.children[0] &&
-        node.children[0].type === 'strong'
-      ) {
-        return (
-          <Text key={node.key} style={[styles.body, styles.em, styles.strong]}>
-            {node.children[0].children[0].content}
-          </Text>
-        );
-      }
-
-      return (
-        <Text key={node.key} style={styles.em}>
-          {children}
-        </Text>
-      );
-    },
   };
 
   const markdownStyle = {
@@ -269,9 +286,14 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
     },
   };
 
+  const normalizedContent = useMemo(
+    () => formatMarkdown(content.trim()),
+    [content],
+  );
+
   return (
     <Markdown rules={rules} style={markdownStyle}>
-      {content.trim()}
+      {normalizedContent}
     </Markdown>
   );
 };

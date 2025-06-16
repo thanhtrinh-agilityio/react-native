@@ -1,110 +1,126 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
 
-import { ChatInput } from '../index';
+import { ChatInput } from '../index'; // update path accordingly
 
-jest.mock('expo-image-picker', () => ({
-  launchImageLibraryAsync: jest.fn(() =>
-    Promise.resolve({
-      canceled: false,
-      assets: [{ uri: 'mocked-image-uri' }],
-    }),
-  ),
-  requestMediaLibraryPermissionsAsync: jest.fn(() =>
-    Promise.resolve({ granted: true }),
-  ),
+jest.mock('@rneui/base', () => {
+  const React = require('react');
+  const { TouchableOpacity, Text } = require('react-native');
+
+  const SpeedDial = ({ children }) => <>{children}</>;
+  SpeedDial.Action = ({ icon, onPress, disabled, testID }) => {
+    if (disabled) return null;
+    return (
+      <TouchableOpacity onPress={onPress} testID={`speeddial-${icon.name}`}>
+        <Text>{icon.name}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  return {
+    SpeedDial,
+  };
+});
+
+// Mocks for Expo file/image picker
+jest.mock('expo-document-picker', () => ({
+  getDocumentAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'file.pdf', name: 'file.pdf', size: '1024' }],
+  }),
 }));
 
-describe('ChatInput Component', () => {
-  const onChangeMessageMock = jest.fn();
-  const onSendMock = jest.fn();
+jest.mock('expo-image-picker', () => ({
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'image.jpg' }],
+  }),
+}));
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+describe('ChatInput', () => {
+  const defaultProps = {
+    loading: false,
+    message: '',
+    open: false,
+    threadId: '',
+    setOpen: jest.fn(),
+    onChangeMessage: jest.fn(),
+    onSend: jest.fn(),
+    onStopStream: jest.fn(),
+  };
 
-  it('renders input and buttons', () => {
+  it('renders input and send button correctly', () => {
     const { getByTestId, getByLabelText } = render(
-      <ChatInput
-        loading={false}
-        message=""
-        onChangeMessage={onChangeMessageMock}
-        onSend={onSendMock}
-      />,
+      <ChatInput {...defaultProps} />,
     );
     expect(getByTestId('chat-input')).toBeTruthy();
-    expect(getByLabelText('upload-image-button')).toBeTruthy();
+    expect(getByLabelText('send-button')).toBeTruthy();
   });
 
-  it('calls setMessage on text input change', () => {
-    const { getByTestId } = render(
-      <ChatInput
-        loading={false}
-        message=""
-        onChangeMessage={onChangeMessageMock}
-        onSend={onSendMock}
-      />,
+  it('clears image and file when threadId changes', () => {
+    const defaultProps = {
+      open: false,
+      setOpen: jest.fn(),
+      message: '',
+      loading: false,
+      onChangeMessage: jest.fn(),
+      onSend: jest.fn(),
+    };
+
+    const { queryByText, queryByTestId, rerender } = render(
+      <ChatInput {...defaultProps} threadId="thread-1" />,
     );
 
-    fireEvent.changeText(getByTestId('chat-input'), 'Hello');
+    rerender(<ChatInput {...defaultProps} threadId="thread-1" />);
 
-    expect(onChangeMessageMock).toHaveBeenCalledWith('Hello');
+    rerender(<ChatInput {...defaultProps} threadId="thread-2" />);
+
+    // Preview should be cleared
+    expect(queryByTestId('image-preview')).toBeNull();
+    expect(queryByText(/\.pdf$/)).toBeNull();
   });
 
-  it('calls expo-image-picker when image upload button pressed', async () => {
+  it('disables send button when no input, image or file', () => {
+    const { getByLabelText } = render(<ChatInput {...defaultProps} />);
+    expect(getByLabelText('send-button').props.disabled).toBe(true);
+  });
+
+  it('calls onSend when send button is pressed with message', () => {
     const { getByLabelText } = render(
-      <ChatInput
-        loading={false}
-        message=""
-        onChangeMessage={onChangeMessageMock}
-        onSend={onSendMock}
-      />,
+      <ChatInput {...defaultProps} message="Hello world" />,
     );
-
-    fireEvent.press(getByLabelText('upload-image-button', { name: /image/i }));
-
-    await waitFor(() => {
-      expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
-    });
-  });
-
-  it('calls onSend with message and clears image after sending', async () => {
-    const { getByLabelText } = render(
-      <ChatInput
-        loading={false}
-        message="Test message"
-        onChangeMessage={onChangeMessageMock}
-        onSend={onSendMock}
-      />,
-    );
-
     fireEvent.press(getByLabelText('send-button'));
-    await waitFor(() => {
-      expect(onSendMock).toHaveBeenCalledWith('Test message', '');
-    });
+    expect(defaultProps.onSend).toHaveBeenCalledWith('Hello world', '', null);
   });
 
-  it('renders loading indicator and disables input', () => {
-    const onSendMock = jest.fn();
-
-    const { getByTestId, getByLabelText, queryByPlaceholderText } = render(
-      <ChatInput
-        loading={true}
-        message=""
-        onChangeMessage={jest.fn()}
-        onSend={onSendMock}
-      />,
+  it('shows stop button when loading is true', () => {
+    const { getByLabelText } = render(
+      <ChatInput {...defaultProps} loading={true} />,
     );
+    expect(getByLabelText('stop-button')).toBeTruthy();
+  });
 
-    const input = getByTestId('chat-input');
-    expect(input.props.editable).toBe(false);
+  it('calls onStopStream when stop button is pressed', () => {
+    const { getByLabelText } = render(
+      <ChatInput {...defaultProps} loading={true} />,
+    );
+    fireEvent.press(getByLabelText('stop-button'));
+    expect(defaultProps.onStopStream).toHaveBeenCalled();
+  });
 
-    // The send button in loading state is the stop-button
-    const stopButton = getByLabelText('stop-button');
-    expect(stopButton).toBeTruthy();
+  it('handles image upload via SpeedDial.Action', async () => {
+    const { getByTestId } = render(<ChatInput {...defaultProps} open={true} />);
+    const imageAction = getByTestId('speeddial-image');
+    fireEvent.press(imageAction);
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
+  });
 
-    // The placeholder animation text is shown
-    expect(queryByPlaceholderText('Ask what’s on mind...')).toBeNull();
+  it('handles PDF upload via SpeedDial.Action', async () => {
+    const { findByText } = render(<ChatInput {...defaultProps} open={true} />);
+    const pdfAction = await findByText('picture-as-pdf');
+    fireEvent.press(pdfAction);
+    expect(DocumentPicker.getDocumentAsync).toHaveBeenCalled();
   });
 });

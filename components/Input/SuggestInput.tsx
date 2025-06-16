@@ -73,7 +73,7 @@ const SuggestInputComponent = ({
 
   const styles = makeStyles(fullTheme);
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.wrapper} testID="suggest-input-container">
       <View style={[styles.suggestRow]}>
         {isLoading ? (
           <View style={[styles.loadingContainer]}>
