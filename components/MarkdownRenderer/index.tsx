@@ -64,7 +64,6 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
   } | null>(null);
 
   const skipFenceIndexRef = useRef<number | null>(null);
-  console.log('MarkdownRendererComponent content:', content);
 
   const formatMarkdown = (md: string) => {
     const lines = md.split('\n');
