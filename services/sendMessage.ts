@@ -29,14 +29,15 @@ export function sendMessageToOpenRouter(
         body: JSON.stringify({
           model: OPENROUTER_CONFIG.model,
           stream: true,
+          transforms: ['middle-out'],
           messages: giftedMsgs,
-          ...(giftedMsgs.some((m) => m.content[1].type === 'file') && {
+          ...(giftedMsgs.some(
+            (m) => Array.isArray(m.content) && m.content[1]?.type === 'file',
+          ) && {
             plugins: [
               {
                 id: 'file-parser',
-                pdf: {
-                  engine: 'pdf-text',
-                },
+                pdf: { engine: 'pdf-text' },
               },
             ],
           }),

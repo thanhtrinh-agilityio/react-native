@@ -26,7 +26,6 @@ const makeStyles = (theme: FullTheme) =>
   StyleSheet.create({
     container: {
       flexDirection: 'row',
-      justifyContent: 'center',
       gap: 10,
       width: '100%',
       paddingHorizontal: 5,
@@ -177,43 +176,46 @@ const ChatInputComponent = ({
 
   return (
     <View style={styles.container}>
-      <View
-        style={{
-          position: 'absolute',
-          right: 0,
-          left: 0,
-          bottom: 90,
-          alignItems: 'center',
-        }}
-      >
-        {(image || filePdf) && (
-          <Icon
-            name="close"
-            type="ionicon"
-            color={theme?.colors?.text}
-            onPress={handleRemoveFileUpload}
-            size={14}
-          />
-        )}
-        {image ? (
-          <Image
-            source={{ uri: image }}
-            style={{ width: 30, height: 30, resizeMode: 'contain' }}
-          />
-        ) : filePdf ? (
-          <>
-            <TextBlock
-              style={{
-                fontWeight: 'bold',
-                fontSize: 10,
-                color: theme.colors.text,
-              }}
-            >
-              {filePdf.name}- {Math.round(parseInt(filePdf.size!) / 1024)} KB
-            </TextBlock>
-          </>
-        ) : null}
-      </View>
+      {(image || filePdf) && (
+        <View
+          style={{
+            position: 'absolute',
+            right: 0,
+            left: 0,
+            alignItems: 'center',
+          }}
+        >
+          {(image || filePdf) && (
+            <Icon
+              testID="remove-upload"
+              accessibilityLabel="remove-upload"
+              name="close"
+              type="ionicon"
+              color={theme?.colors?.text}
+              onPress={handleRemoveFileUpload}
+              size={14}
+            />
+          )}
+          {image ? (
+            <Image
+              source={{ uri: image }}
+              style={{ width: 30, height: 30, resizeMode: 'contain' }}
+            />
+          ) : filePdf ? (
+            <>
+              <TextBlock
+                style={{
+                  fontWeight: 'bold',
+                  fontSize: 10,
+                  color: theme.colors.text,
+                }}
+              >
+                {filePdf.name}- {Math.round(parseInt(filePdf.size!) / 1024)} KB
+              </TextBlock>
+            </>
+          ) : null}
+        </View>
+      )}
 
       <View
         style={{
@@ -296,7 +298,6 @@ const ChatInputComponent = ({
           />
         </View>
       </View>
-
       {/* Send Button */}
       {loading ? (
         <BaseButton

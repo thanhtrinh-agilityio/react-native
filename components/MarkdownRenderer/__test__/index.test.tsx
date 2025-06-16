@@ -84,4 +84,26 @@ describe('MarkdownRenderer', () => {
       expect(Alert.alert).toHaveBeenCalledWith('Copied!');
     });
   });
+
+  it('inserts empty line before standalone ``` block', () => {
+    const content = 'Some text\n```js\ncode\n```';
+    const { getByText } = customRender(<MarkdownRenderer content={content} />);
+    expect(getByText(/code/i)).toBeTruthy();
+  });
+
+  it('resets currentHeadingRef if no code block follows heading', () => {
+    const { queryByText } = customRender(
+      <MarkdownRenderer content={'### js (file.js)'} />,
+    );
+    expect(queryByText(/file\.js/)).toBeNull();
+  });
+
+  it('does not show filename for bash code blocks', () => {
+    const markdown = `## bash (script.sh)\n\`\`\`bash\necho hello\n\`\`\``;
+    const { getByText, queryByText } = customRender(
+      <MarkdownRenderer content={markdown} />,
+    );
+    expect(getByText(/BASH/)).toBeTruthy();
+    expect(queryByText(/script\.sh/)).toBeNull();
+  });
 });
