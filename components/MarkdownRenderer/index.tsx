@@ -64,7 +64,6 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
   } | null>(null);
 
   const skipFenceIndexRef = useRef<number | null>(null);
-  console.log('MarkdownRendererComponent content:', content);
 
   const formatMarkdown = (md: string) => {
     const lines = md.split('\n');
@@ -157,11 +156,6 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
         ? getDefaultFileNameByLang(node.sourceInfo)
         : node.content && node.sourceInfo;
       extractFilename(node.content, node.sourceInfo);
-
-      console.log(
-        'extractFilename:',
-        extractFilename(node.content, node.sourceInfo),
-      );
 
       const language = node.sourceInfo
         ? node.sourceInfo
