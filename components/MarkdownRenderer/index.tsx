@@ -64,6 +64,7 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
   } | null>(null);
 
   const skipFenceIndexRef = useRef<number | null>(null);
+  console.log('MarkdownRendererComponent content:', content);
 
   const formatMarkdown = (md: string) => {
     const lines = md.split('\n');
@@ -150,14 +151,22 @@ const MarkdownRendererComponent = ({ content }: { content: string }) => {
 
     fence: (node) => {
       const heading = currentHeadingRef.current;
-      const fileName =
-        heading?.fileName ||
-        extractFilename(node.content, node.sourceInfo) ||
-        getDefaultFileNameByLang(node.sourceInfo);
+      const fileName = heading?.fileName
+        ? heading.fileName
+        : node.sourceInfo
+        ? getDefaultFileNameByLang(node.sourceInfo)
+        : node.content && node.sourceInfo;
+      extractFilename(node.content, node.sourceInfo);
 
-      const language = node.sourceInfo || heading?.lang || 'text';
+      console.log(
+        'extractFilename:',
+        extractFilename(node.content, node.sourceInfo),
+      );
+
+      const language = node.sourceInfo
+        ? node.sourceInfo
+        : heading?.lang ?? 'text';
       const code = node.content;
-
       if (skipFenceIndexRef?.current !== node.index) {
         skipFenceIndexRef.current = node.index;
         currentHeadingRef.current = null;
