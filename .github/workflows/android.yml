@@ -2,9 +2,9 @@ name: Android CI + EAS Build
 
 on:
   push:
-    branches: [ "feat/practice-chat-rak-gpt" ]
+    branches: ['feat/practice-chat-rak-gpt']
   pull_request:
-    branches: [ "feat/practice-chat-rak-gpt" ]
+    branches: ['feat/practice-chat-rak-gpt']
   workflow_dispatch:
 
 jobs:
@@ -28,12 +28,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: ♻️ Cache node_modules
+      - name: ♻️ Yarn Cache
         uses: actions/cache@v4
-        id: yarn-cache
         with:
-          path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock', '**/package.json') }}
+          path: |
+            ~/.yarn/cache
+            ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
 
@@ -46,10 +47,10 @@ jobs:
       - name: 🛠️ Build APK (Release - skip test)
         run: cd android && ./gradlew assembleRelease -x test --warning-mode all
 
-      - name: 📁 Upload APK artifact
+      - name: 📁 Upload Gradle APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: gradle-release-apk
           path: android/app/build/outputs/apk/release/*.apk
 
   eas-build:
@@ -66,12 +67,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: ♻️ Cache node_modules
+      - name: ♻️ Yarn Cache
         uses: actions/cache@v4
-        id: yarn-cache
         with:
-          path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock', '**/package.json') }}
+          path: |
+            ~/.yarn/cache
+            ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
 
@@ -81,12 +83,24 @@ jobs:
       - name: 🧪 Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: 🔐 Authenticate with Expo
+      - name: 🔐 Authenticate with EAS
         run: eas whoami
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
 
       - name: 🚀 EAS Cloud Build (Android)
         run: eas build --platform android --non-interactive --profile production
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+
+      - name: 📥 Download APK from EAS
+        run: |
+          npx eas build:inspect --platform android --json > build-info.json
+          DOWNLOAD_URL=$(jq -r '.[0].artifacts.buildUrl' build-info.json)
+          curl -o app-eas.apk "$DOWNLOAD_URL"
+
+      - name: 📤 Upload EAS APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-release-apk
+          path: app-eas.apk
