@@ -21,6 +21,14 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Set up Node.js (for React Native / Gradle integration)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Node dependencies
+        run: cd android && npm install
+
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
