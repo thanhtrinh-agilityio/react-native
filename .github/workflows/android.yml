@@ -40,6 +40,8 @@ jobs:
 
       - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
+      - name: 🧹 Clear Metro cache
+        run: rm -rf /tmp/metro-* || true
 
       - name: 🔓 Make gradlew executable
         run: chmod +x android/gradlew
