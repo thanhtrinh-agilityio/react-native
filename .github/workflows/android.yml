@@ -44,7 +44,7 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: 🛠️ Build APK (Release - skip test)
-        run: cd android && ./gradlew assembleRelease -x test --warning-mode all
+        run: cd android && ./gradlew assembleRelease -x test 
 
       - name: 📁 Upload APK artifact
         uses: actions/upload-artifact@v4
