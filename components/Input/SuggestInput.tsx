@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 // constants
-import { Colors } from '@/constants/colors';
+import { Colors } from '@/constants';
 
 // types
 import { Suggestion } from '@/types';

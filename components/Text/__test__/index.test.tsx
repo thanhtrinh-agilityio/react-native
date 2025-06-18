@@ -5,7 +5,7 @@ import React from 'react';
 import { TextBlock } from '../index';
 
 // hooks
-import { Colors } from '@/constants/colors';
+import { Colors } from '@/constants';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { MOCK_THEME } from '@/mocks';
 
