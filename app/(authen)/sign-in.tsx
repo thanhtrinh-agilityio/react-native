@@ -15,7 +15,6 @@ import { BaseButton, TextBlock, TextInput } from '@/components';
 
 // Constants
 import {
-  Colors,
   EXPO_ANDROID_CLIENT_ID,
   MESSAGE,
   MESSAGE_ERROR,
@@ -291,7 +290,7 @@ export default function LoginScreen() {
                           <>
                             <Icon
                               name="check-circle-outline"
-                              color={Colors.light.success}
+                              color={theme.colors.success}
                               size={15}
                             />
                             <TextBlock variant="success">

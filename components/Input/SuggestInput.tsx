@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 
 // constants
-import { Colors } from '@/constants';
 
 // types
 import { Suggestion } from '@/types';
@@ -79,7 +78,7 @@ const SuggestInputComponent = ({
           <View style={[styles.loadingContainer]}>
             <ActivityIndicator
               size="small"
-              color={Colors.light.primary}
+              color={theme.colors.primary}
               testID="loading-suggest"
             />
           </View>

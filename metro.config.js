@@ -2,22 +2,18 @@ const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 const withStorybook = require('@storybook/react-native/metro/withStorybook');
 
-const config = getDefaultConfig(__dirname);
+const projectRoot = __dirname;
+
+const config = getDefaultConfig(projectRoot);
 
 config.resolver.sourceExts.push('cjs');
 config.resolver.unstable_enablePackageExports = false;
 
-module.exports = withStorybook(config, {
-  // Set to false to remove storybook specific options
-  // you can also use a env variable to set this
-  enabled: true,
-  // Path to your storybook config
-  configPath: path.resolve(__dirname, './.storybook'),
+config.resolver.extraNodeModules = {
+  '@': path.resolve(projectRoot),
+};
 
-  // Optional websockets configuration
-  // Starts a websocket server on the specified port and host on metro start
-  // websockets: {
-  //   port: 7007,
-  //   host: 'localhost',
-  // },
+module.exports = withStorybook(config, {
+  enabled: true,
+  configPath: path.resolve(projectRoot, './.storybook'),
 });
