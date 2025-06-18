@@ -33,7 +33,7 @@ jobs:
         id: yarn-cache
         with:
           path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock', '**/package.json') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
 
@@ -44,7 +44,7 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: 🛠️ Build APK (Release - skip test)
-        run: cd android && ./gradlew assembleRelease -x test 
+        run: cd android && ./gradlew assembleRelease -x test --warning-mode all
 
       - name: 📁 Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -71,7 +71,7 @@ jobs:
         id: yarn-cache
         with:
           path: node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock', '**/package.json') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
 
