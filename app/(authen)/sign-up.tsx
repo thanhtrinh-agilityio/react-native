@@ -16,8 +16,7 @@ import Toast from 'react-native-toast-message';
 import { BaseButton, TextBlock, TextInput } from '@/components';
 
 // Constants
-import { ROUTES } from '@/constants';
-import { MESSAGE, MESSAGE_ERROR } from '@/constants/message';
+import { MESSAGE, MESSAGE_ERROR, ROUTES } from '@/constants';
 
 // Services
 import { signUpWithEmail } from '@/services/authService';
