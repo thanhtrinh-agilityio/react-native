@@ -8,10 +8,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  eas-build:
-    name: 🚀 EAS Build (Expo Cloud)
-    runs-on: ubuntu-latest
+  test:
+    name: 🧪 Run Tests
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.18.1
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Run JS tests
+        run: yarn test
 
+  eas-build:
+    name: 🚀 EAS Build (Expo Android)
+    runs-on: ubuntu-latest
+    needs: test # ⬅️ Wait for 'test' job to pass
+    if: ${{ github.event_name != 'pull_request' }} # ⬅️ Only build on push, not PR
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
