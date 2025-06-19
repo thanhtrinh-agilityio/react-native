@@ -42,15 +42,15 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: 🚀 EAS Cloud Build (Android)
-        run: eas build --platform android --non-interactive --profile production
+        run: eas build --platform android --non-interactive --profile production --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📥 Download APK from EAS
         run: |
-          npx eas build:inspect --platform android --json > build-info.json
-          DOWNLOAD_URL=$(jq -r '.[0].artifacts.buildUrl' build-info.json)
-          curl -o app-eas.apk "$DOWNLOAD_URL"
+          DOWNLOAD_URL=$(eas build:artifacts --platform android)
+          echo "APK Download URL: $DOWNLOAD_URL"
+          curl -L -o app-eas.apk "$DOWNLOAD_URL"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
