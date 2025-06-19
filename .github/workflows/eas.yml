@@ -11,6 +11,7 @@ jobs:
   eas-build:
     name: 🚀 EAS Build (Expo Cloud)
     runs-on: ubuntu-latest
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -33,15 +34,15 @@ jobs:
       - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: 🧪 Install EAS CLI
-        run: npm install -g eas-cli
+      - name: 🧪 Install latest EAS CLI
+        run: npm install -g eas-cli@latest
 
       - name: 🔐 Authenticate with Expo
         run: eas whoami
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🚀 EAS Cloud Build (Android)
+      - name: 🚀 EAS Build (Android)
         run: eas build --platform android --non-interactive --profile production --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -49,12 +50,12 @@ jobs:
       - name: 📥 Download APK from EAS
         run: |
           DOWNLOAD_URL=$(eas build:artifacts --platform android)
-          echo "APK Download URL: $DOWNLOAD_URL"
+          echo "📦 APK Download URL: $DOWNLOAD_URL"
           curl -L -o app-eas.apk "$DOWNLOAD_URL"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📤 Upload EAS APK artifact
+      - name: 📤 Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: eas-release-apk
