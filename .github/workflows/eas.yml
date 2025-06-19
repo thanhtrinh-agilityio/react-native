@@ -54,19 +54,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
-      - name: 📦 Check if dependencies changed
-        id: deps-check
-        run: |
-          if git diff --name-only ${{ github.sha }} ${{ github.event.before }} | grep -qE '(^|/)package\.json$|(^|/)yarn\.lock$'; then
-            echo "Dependencies changed"
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "Dependencies unchanged"
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 📦 Install dependencies
-        if: steps.node-modules-cache.outputs.cache-hit != 'true' || steps.deps-check.outputs.changed == 'true'
+      - name: 📦 Install dependencies (if needed)
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: yarn install --frozen-lockfile
 
       - name: 🧪 Install latest EAS CLI
@@ -77,15 +66,18 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
+      - name: 🛠️ Create .env file for secure vars
+        run: |
+          echo "OPENROUTER_API_KEY=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}" >> .env
+          echo "OPENROUTER_MODEL=${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}" >> .env
+          echo "OPENROUTER_API_URL=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}" >> .env
+          echo "OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}" >> .env
+          echo "STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}" >> .env
+
       - name: 🚀 Run EAS Build (Android)
         run: eas build --platform android --non-interactive --profile production --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_STORYBOOK_ENABLED: ${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
-          EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
-          EXPO_PUBLIC_OPENROUTER_MODEL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
-          EXPO_PUBLIC_OPENROUTER_API_URL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
-          EXPO_PUBLIC_OPENROUTER_TITLE: ${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
 
       - name: 📤 Upload APK artifact
         uses: actions/upload-artifact@v4
