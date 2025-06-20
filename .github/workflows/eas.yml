@@ -81,8 +81,8 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📤 Upload APK artifact
+      - name: Upload APK artifact (Preview)
         uses: actions/upload-artifact@v4
         with:
-          name: eas-release-apk
-          path: app-eas.apk
+          name: eas-preview-apk
+          path: dist/*.apk
