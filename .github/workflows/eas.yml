@@ -74,8 +74,8 @@ jobs:
           echo "OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}" >> .env
           echo "STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}" >> .env
 
-      - name: 🚀 Run EAS Build (Android)
-        run: eas build --platform android --non-interactive --profile production --wait
+      - name: Run EAS Build (Android Preview)
+        run: eas build --platform android --non-interactive --profile preview --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
