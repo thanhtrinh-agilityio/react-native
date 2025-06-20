@@ -30,9 +30,9 @@ jobs:
         profile: [preview, production]
         exclude:
           - mode: local
-            profile: production
-          - mode: remote
             profile: preview
+          - mode: remote
+            profile: production
 
     steps:
       - name: 📥 Checkout repository
