@@ -66,16 +66,18 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🛠️ Create .env file for secure vars
+      - name: 🛠️ Create .env file for build environment
         run: |
-          echo "OPENROUTER_API_KEY=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}" >> .env
-          echo "OPENROUTER_MODEL=${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}" >> .env
-          echo "OPENROUTER_API_URL=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}" >> .env
-          echo "OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}" >> .env
-          echo "STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}" >> .env
+          cat <<EOF > .env
+          EXPO_PUBLIC_OPENROUTER_API_KEY=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
+          EXPO_PUBLIC_OPENROUTER_MODEL=${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
+          EXPO_PUBLIC_OPENROUTER_API_URL=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
+          EXPO_PUBLIC_OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
+          EXPO_PUBLIC_STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
+          EOF
 
       - name: Run EAS Build (Android Preview)
-        run: eas build --platform android --non-interactive --profile preview --wait
+        run: eas build --platform android --local --non-interactive --profile production --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
