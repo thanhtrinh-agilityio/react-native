@@ -1,4 +1,4 @@
-name: Run Test + EAS Build
+name: Run Tests + EAS Matrix Build
 
 on:
   push:
@@ -13,76 +13,64 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 20.18.1
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Run JS tests
-        run: yarn test
+      - run: yarn install --frozen-lockfile
+      - run: yarn test
 
   eas-build:
-    name: 🚀 EAS Build (Expo Android)
+    name: 🚀 EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
     runs-on: ubuntu-latest
     needs: test
+
+    strategy:
+      matrix:
+        mode: [local, remote]
+        profile: [preview, production]
+        exclude:
+          - mode: local
+            profile: production
+          - mode: remote
+            profile: preview
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧰 Set up Node.js
+      - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: ♻️ Yarn Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.yarn/cache
-            ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: ♻️ Cache node_modules
-        uses: actions/cache@v4
-        id: node-modules-cache
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
-
-      - name: 📦 Install dependencies (if needed)
-        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+      - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: 🧪 Install latest EAS CLI
-        run: npm install -g eas-cli@latest
+      - name: 📥 Install EAS CLI
+        run: npm install -g eas-cli
 
-      - name: 🔐 Authenticate with Expo
-        run: eas whoami
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: 🛠️ Create .env file for build environment
+      - name: 🚀 Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         run: |
-          cat <<EOF > .env
-          EXPO_PUBLIC_OPENROUTER_API_KEY=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
-          EXPO_PUBLIC_OPENROUTER_MODEL=${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
-          EXPO_PUBLIC_OPENROUTER_API_URL=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
-          EXPO_PUBLIC_OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
-          EXPO_PUBLIC_STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
-          EOF
+          echo "📦 Starting EAS Build"
+          echo "🔧 Mode: ${{ matrix.mode }}"
+          echo "🛠️  Profile: ${{ matrix.profile }}"
 
-      - name: Run EAS Build (Android Preview)
-        run: eas build --platform android --local --non-interactive --profile production --wait
+          if [ "${{ matrix.mode }}" = "local" ]; then
+            export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+            export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+            export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+            export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+            export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+            eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
+          else
+            eas build --platform android --non-interactive --profile ${{ matrix.profile }} --wait
+          fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📤 Upload local APK file
+      - name: 📤 Upload APK [${{ matrix.mode }} / ${{ matrix.profile }}]
+        if: matrix.mode == 'local'
         uses: actions/upload-artifact@v4
         with:
-          name: eas-preview-apk
+          name: apk-${{ matrix.profile }}-${{ matrix.mode }}
           path: ${{ github.workspace }}/build-*.apk
