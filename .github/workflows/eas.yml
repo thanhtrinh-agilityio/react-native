@@ -43,6 +43,19 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
+      # ✅ Create .env file for preview only
+      - name: 🛠️ Create .env (preview only)
+        if: matrix.profile == 'preview'
+        run: |
+          cat <<EOF > .env
+          EXPO_PUBLIC_OPENROUTER_API_KEY=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
+          EXPO_PUBLIC_OPENROUTER_MODEL=${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
+          EXPO_PUBLIC_OPENROUTER_API_URL=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
+          EXPO_PUBLIC_OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
+          EXPO_PUBLIC_STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
+          EOF
+
+      # ✅ Run preview builds
       - name: 🚀 EAS Build (preview)
         if: matrix.profile == 'preview'
         id: build-preview
@@ -61,6 +74,7 @@ jobs:
           EXPO_PUBLIC_OPENROUTER_TITLE: ${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
           EXPO_PUBLIC_STORYBOOK_ENABLED: ${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
 
+      # ✅ Run production builds
       - name: 🚀 EAS Build (production)
         if: matrix.profile == 'production'
         id: build-production
@@ -74,14 +88,22 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📤 Upload APK Artifact
+      # ✅ Upload local APKs
+      - name: 📤 Upload APK
         if: matrix.mode == 'local'
         uses: actions/upload-artifact@v4
         with:
           name: apk-${{ matrix.profile }}-${{ matrix.mode }}
-          path: build-*.apk
+          path: ${{ github.workspace }}/build-*.apk
 
-      - name: 📎 Add Remote Build URL to Summary
-        if: matrix.mode == 'remote'
+      # ✅ Add remote build link (preview)
+      - name: 📎 Add Expo Build URL (preview)
+        if: matrix.mode == 'remote' && matrix.profile == 'preview'
         run: |
-          echo "### 🚀 [Expo Build Link - ${{ matrix.profile }}](${{ steps.build-${{ matrix.profile }}.outputs.BUILD_URL }})" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 [Expo Preview Build](${{ steps.build-preview.outputs.BUILD_URL }})" >> $GITHUB_STEP_SUMMARY
+
+      # ✅ Add remote build link (production)
+      - name: 📎 Add Expo Build URL (production)
+        if: matrix.mode == 'remote' && matrix.profile == 'production'
+        run: |
+          echo "### 🚀 [Expo Production Build](${{ steps.build-production.outputs.BUILD_URL }})" >> $GITHUB_STEP_SUMMARY
