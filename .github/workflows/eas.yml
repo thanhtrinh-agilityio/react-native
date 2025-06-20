@@ -28,26 +28,30 @@ jobs:
       matrix:
         mode: [local, remote]
         profile: [preview, production]
+        exclude:
+          - mode: local
+            profile: production
+          - mode: remote
+            profile: preview
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Install EAS CLI
+      - name: 📥 Install EAS CLI
         run: npm install -g eas-cli
 
-      # ✅ Run preview builds
-      - name: 🚀 EAS Build (preview)
-        if: matrix.mode == 'local' && matrix.profile == 'preview'
-        id: build-preview
-        run: eas build --platform android --local --non-interactive --profile preview --wait
+      - name: 🚀 EAS Build (local)
+        if: matrix.mode == 'local'
+        run: eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
@@ -56,15 +60,13 @@ jobs:
           EXPO_PUBLIC_OPENROUTER_TITLE: ${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
           EXPO_PUBLIC_STORYBOOK_ENABLED: ${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
 
-      - name: 🚀 EAS Build (production)
-        if: matrix.mode == 'remote' && matrix.profile == 'production'
-        id: build-production
-        run: eas build --platform android --local --non-interactive --profile production --wait
-
+      - name: 🚀 EAS Build (remote)
+        if: matrix.mode == 'remote'
+        run: eas build --platform android --non-interactive --profile ${{ matrix.profile }} --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📤 Upload APK Preview
+      - name: 📤 Upload APK (local only)
         if: matrix.mode == 'local'
         uses: actions/upload-artifact@v4
         with:
