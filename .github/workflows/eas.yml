@@ -66,20 +66,15 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🛠️ Create .env file for build environment
-        run: |
-          cat <<EOF > .env
-          EXPO_PUBLIC_OPENROUTER_API_KEY=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
-          EXPO_PUBLIC_OPENROUTER_MODEL=${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
-          EXPO_PUBLIC_OPENROUTER_API_URL=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
-          EXPO_PUBLIC_OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
-          EXPO_PUBLIC_STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
-          EOF
-
       - name: Run EAS Build (Android Preview)
         run: eas build --platform android --local --non-interactive --profile production --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
+          EXPO_PUBLIC_OPENROUTER_MODEL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
+          EXPO_PUBLIC_OPENROUTER_API_URL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
+          EXPO_PUBLIC_OPENROUTER_TITLE: ${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
+          EXPO_PUBLIC_STORYBOOK_ENABLED: ${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
 
       - name: 📤 Upload local APK file
         uses: actions/upload-artifact@v4
