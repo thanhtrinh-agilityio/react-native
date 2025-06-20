@@ -49,24 +49,26 @@ jobs:
       - name: 📥 Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: 🚀 EAS Build (local)
-        if: matrix.mode == 'local'
-        run: eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
+      - name: 🚀 Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
+        run: |
+          echo "📦 Starting EAS Build"
+          echo "🔧 Mode: ${{ matrix.mode }}"
+          echo "🛠️  Profile: ${{ matrix.profile }}"
+
+          if [ "${{ matrix.mode }}" = "local" ]; then
+            export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+            export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+            export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+            export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+            export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+            eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
+          else
+            eas build --platform android --non-interactive --profile ${{ matrix.profile }} --wait
+          fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
-          EXPO_PUBLIC_OPENROUTER_MODEL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
-          EXPO_PUBLIC_OPENROUTER_API_URL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
-          EXPO_PUBLIC_OPENROUTER_TITLE: ${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
-          EXPO_PUBLIC_STORYBOOK_ENABLED: ${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
 
-      - name: 🚀 EAS Build (remote)
-        if: matrix.mode == 'remote'
-        run: eas build --platform android --non-interactive --profile ${{ matrix.profile }} --wait
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: 📤 Upload APK (local only)
+      - name: 📤 Upload APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         if: matrix.mode == 'local'
         uses: actions/upload-artifact@v4
         with:
