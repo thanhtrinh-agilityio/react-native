@@ -45,10 +45,9 @@ jobs:
 
       # ✅ Run preview builds
       - name: 🚀 EAS Build (preview)
-        if: matrix.profile == 'local'
+        if: matrix.mode == 'local' && matrix.profile == 'preview'
         id: build-preview
-        run: |
-          eas build --platform android --local --non-interactive --profile preview --wait
+        run: eas build --platform android --local --non-interactive --profile preview --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
@@ -60,13 +59,12 @@ jobs:
       - name: 🚀 EAS Build (production)
         if: matrix.mode == 'remote' && matrix.profile == 'production'
         id: build-production
-        run: |
-          eas build --platform android --local --non-interactive --profile production --wait
+        run: eas build --platform android --local --non-interactive --profile production --wait
 
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📤 Upload APK
+      - name: 📤 Upload APK Preview
         if: matrix.mode == 'local'
         uses: actions/upload-artifact@v4
         with:
