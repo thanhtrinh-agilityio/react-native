@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
@@ -29,14 +31,37 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-${{ runner.os }}-
 
       - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
 
       - name: 🧪 Run tests
         run: yarn test || { echo "Tests failed"; exit 1; }
+
+      - name: 🔍 Debug test output
+        if: always()
+        run: |
+          echo "Test job status: ${{ job.status }}"
+          ls -la
+          node --version
+          yarn --version
+
+      - name: ✅ Set status check
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "${{ job.status }}",
+              context: "test",
+              description: "${{ job.status == 'success' ? 'Tests passed' : 'Tests failed' }}",
+              target_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            })
 
   eas-build:
     name: EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
@@ -51,10 +76,11 @@ jobs:
             profile: production
           - mode: remote
             profile: preview
-
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
@@ -65,8 +91,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-${{ runner.os }}-
 
       - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
@@ -74,12 +100,28 @@ jobs:
       - name: 📥 Install EAS CLI
         run: npm install -g eas-cli
 
+      - name: 📝 Generate commit log for production
+        if: matrix.profile == 'production'
+        run: |
+          echo "Generating commit log for production build"
+          echo "Current commit: ${{ github.sha }}" > commit-log-production.txt
+          git log --pretty=format:"%h - %an, %ad : %s" --date=iso -n 10 >> commit-log-production.txt
+          echo "Commit log generated:"
+          cat commit-log-production.txt
+
+      - name: 📦 Upload commit log
+        if: matrix.profile == 'production'
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-log-production
+          path: commit-log-production.txt
+
       - name: Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         run: |
           echo "📦 Starting EAS Build"
           echo "🔧 Mode: ${{ matrix.mode }}"
           echo "🛠️  Profile: ${{ matrix.profile }}"
-
+          echo "Commit: ${{ github.sha }}"
           if [ "${{ matrix.mode }}" == "local" ]; then
             export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
             export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
@@ -121,8 +163,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.os }}-yarn-
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-${{ runner.os }}-
 
       - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
@@ -130,11 +172,34 @@ jobs:
       - name: 📥 Install EAS CLI
         run: npm install -g eas-cli
 
+      - name: 🔍 Check if EAS branch exists
+        id: check-branch
+        run: |
+          echo "Checking if EAS branch '${{ matrix.profile }}' exists"
+          if eas branch:list | grep -Fx "${{ matrix.profile }}"; then
+            echo "Branch '${{ matrix.profile }}' exists"
+            echo "branch_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Branch '${{ matrix.profile }}' does not exist"
+            echo "branch_exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🌱 Create EAS branch if it does not exist
+        if: steps.check-branch.outputs.branch_exists == 'false'
+        run: |
+          echo "Creating EAS branch '${{ matrix.profile }}'"
+          eas branch:create ${{ matrix.profile }} || { echo "Failed to create EAS branch"; exit 1; }
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
       - name: 🚀 Run EAS Update
+        if: always() && (steps.check-branch.outputs.branch_exists == 'true' || steps.create-branch.conclusion == 'success')
         run: |
           eas update --branch ${{ matrix.profile }} \
             --non-interactive \
-            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]" || { echo "EAS update failed"; exit 1; }
+            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -158,3 +223,4 @@ jobs:
             ✅ **EAS Update Successful** for `${{ matrix.profile }}`
             🔧 Commit: `${{ github.sha }}`
             📄 [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            🔗 [Build details](https://expo.dev/accounts/${{ secrets.EXPO_ACCOUNT }}/projects/rak-gpt/builds)
