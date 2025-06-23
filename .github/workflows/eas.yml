@@ -1,4 +1,4 @@
-name: Run Test + EAS Build
+name: Run Tests + EAS Matrix Build + Update
 
 on:
   push:
@@ -7,82 +7,154 @@ on:
     branches: ['feat/practice-chat-rak-gpt']
   workflow_dispatch:
 
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
 jobs:
   test:
-    name: 🧪 Run Tests
+    name: Run Tests
     runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.18.1
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Run JS tests
-        run: yarn test
-
-  eas-build:
-    name: 🚀 EAS Build (Expo Android)
-    runs-on: ubuntu-latest
-    needs: test
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧰 Set up Node.js
+      - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20.18.1
 
-      - name: ♻️ Yarn Cache
+      - name: 🗄️ Cache Yarn dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.yarn/cache
-            ~/.cache/yarn
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
 
-      - name: ♻️ Cache node_modules
-        uses: actions/cache@v4
-        id: node-modules-cache
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
-
-      - name: 📦 Install dependencies (if needed)
-        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+      - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: 🧪 Install latest EAS CLI
-        run: npm install -g eas-cli@latest
+      - name: 🧪 Run tests
+        run: yarn test || { echo "Tests failed"; exit 1; }
 
-      - name: 🔐 Authenticate with Expo
-        run: eas whoami
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  eas-build:
+    name: EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      matrix:
+        mode: [local, remote]
+        profile: [preview, production]
+        exclude:
+          - mode: local
+            profile: production
+          - mode: remote
+            profile: preview
 
-      - name: 🛠️ Create .env file for build environment
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.1
+
+      - name: 🗄️ Cache Yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
+
+      - name: 📦 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 📥 Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         run: |
-          cat <<EOF > .env
-          EXPO_PUBLIC_OPENROUTER_API_KEY=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
-          EXPO_PUBLIC_OPENROUTER_MODEL=${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
-          EXPO_PUBLIC_OPENROUTER_API_URL=${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
-          EXPO_PUBLIC_OPENROUTER_TITLE=${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
-          EXPO_PUBLIC_STORYBOOK_ENABLED=${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
-          EOF
+          echo "📦 Starting EAS Build"
+          echo "🔧 Mode: ${{ matrix.mode }}"
+          echo "🛠️  Profile: ${{ matrix.profile }}"
 
-      - name: Run EAS Build (Android Preview)
-        run: eas build --platform android --local --non-interactive --profile production --wait
+          if [ "${{ matrix.mode }}" == "local" ]; then
+            export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+            export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+            export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+            export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+            export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+            eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
+          else
+            eas build --platform android --non-interactive --profile ${{ matrix.profile }} --wait
+          fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📤 Upload local APK file
+      - name: 📤 Upload APK [${{ matrix.mode }} / ${{ matrix.profile }}]
+        if: matrix.mode == 'local'
         uses: actions/upload-artifact@v4
         with:
-          name: eas-preview-apk
+          name: apk-${{ matrix.profile }}-${{ matrix.mode }}
           path: ${{ github.workspace }}/build-*.apk
+
+  eas-update:
+    name: EAS Update - ${{ matrix.profile }}
+    runs-on: ubuntu-latest
+    needs: eas-build
+    strategy:
+      matrix:
+        profile: [preview, production]
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.1
+
+      - name: 🗄️ Cache Yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
+
+      - name: 📦 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 📥 Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: 🚀 Run EAS Update
+        run: |
+          eas update --branch ${{ matrix.profile }} \
+            --non-interactive \
+            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]" || { echo "EAS update failed"; exit 1; }
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📝 Write EAS update log
+        if: success()
+        run: |
+          echo "✅ EAS update to '${{ matrix.profile }}' at $(date)" > eas-update-log-${{ matrix.profile }}.txt
+
+      - name: 📦 Upload EAS Update Log
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-update-log-${{ matrix.profile }}
+          path: eas-update-log-${{ matrix.profile }}.txt
+
+      - name: 📝 Comment EAS Update result
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && success()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            ✅ **EAS Update Successful** for `${{ matrix.profile }}`
+            🔧 Commit: `${{ github.sha }}`
+            📄 [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
