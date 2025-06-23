@@ -40,29 +40,6 @@ jobs:
       - name: 🧪 Run tests
         run: yarn test || { echo "Tests failed"; exit 1; }
 
-      - name: 🔍 Debug test output
-        if: always()
-        run: |
-          echo "Test job status: ${{ job.status }}"
-          ls -la
-          node --version
-          yarn --version
-
-      - name: ✅ Set status check
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: "${{ job.status }}",
-              context: "test",
-              description: "${{ job.status == 'success' ? 'Tests passed' : 'Tests failed' }}",
-              target_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            })
-
   eas-build:
     name: EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
     runs-on: ubuntu-latest
