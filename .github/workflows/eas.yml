@@ -40,6 +40,29 @@ jobs:
       - name: 🧪 Run tests
         run: yarn test || { echo "Tests failed"; exit 1; }
 
+      - name: 🔍 Debug test output
+        if: always()
+        run: |
+          echo "Test job status: ${{ job.status }}"
+          ls -la
+          node --version
+          yarn --version
+
+      - name: ✅ Set status check
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "${{ job.status }}",
+              context: "test",
+              description: "${{ job.status == 'success' ? 'Tests passed' : 'Tests failed' }}",
+              target_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            })
+
   eas-build:
     name: EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
     runs-on: ubuntu-latest
@@ -94,6 +117,7 @@ jobs:
           path: commit-log-production.txt
 
       - name: Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
+        id: eas-build
         run: |
           echo "📦 Starting EAS Build"
           echo "🔧 Mode: ${{ matrix.mode }}"
@@ -112,12 +136,29 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
+      - name: 📦 Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.profile }}
+          path: build-log-${{ matrix.profile }}.txt
+
       - name: 📤 Upload APK [${{ matrix.mode }} / ${{ matrix.profile }}]
-        if: matrix.mode == 'local'
+        if: matrix.mode == 'local' && steps.eas-build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: apk-${{ matrix.profile }}-${{ matrix.mode }}
           path: ${{ github.workspace }}/build-*.apk
+
+      - name: 📝 Comment build failure
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.eas-build.outcome == 'failure'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            ❌ **EAS Build Failed** for `${{ matrix.profile }}`
+            🔧 Commit: `${{ github.sha }}`
+            📄 [View build log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ℹ️ Check EAS plan limits or EXPO_TOKEN permissions.
 
   eas-update:
     name: EAS Update - ${{ matrix.profile }}
@@ -126,7 +167,6 @@ jobs:
     strategy:
       matrix:
         profile: [preview, production]
-
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -176,7 +216,7 @@ jobs:
         run: |
           eas update --branch ${{ matrix.profile }} \
             --non-interactive \
-            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]"
+            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]" || { echo "EAS update failed"; exit 1; }
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -200,4 +240,4 @@ jobs:
             ✅ **EAS Update Successful** for `${{ matrix.profile }}`
             🔧 Commit: `${{ github.sha }}`
             📄 [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            🔗 [Build details](https://expo.dev/accounts/${{ secrets.EXPO_ACCOUNT }}/projects/rak-gpt/builds)
+            🔗 [Build details](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
