@@ -7,23 +7,41 @@ on:
     branches: ['feat/practice-chat-rak-gpt']
   workflow_dispatch:
 
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
 jobs:
   test:
     name: Run Tests
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
-      - run: yarn install --frozen-lockfile
-      - run: yarn test
+
+      - name: 🗄️ Cache Yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
+
+      - name: 📦 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 🧪 Run tests
+        run: yarn test || { echo "Tests failed"; exit 1; }
 
   eas-build:
     name: EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
     runs-on: ubuntu-latest
     needs: test
-
     strategy:
       matrix:
         mode: [local, remote]
@@ -41,7 +59,14 @@ jobs:
       - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.18.1
+
+      - name: 🗄️ Cache Yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
 
       - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
@@ -79,21 +104,27 @@ jobs:
     name: EAS Update - ${{ matrix.profile }}
     runs-on: ubuntu-latest
     needs: eas-build
-
     strategy:
       matrix:
         profile: [preview, production]
 
     steps:
-      - name: Checkout repo
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: 🟢 Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.18.1
 
-      - name: Install dependencies
+      - name: 🗄️ Cache Yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/yarn
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
+
+      - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
 
       - name: 📥 Install EAS CLI
@@ -103,23 +134,23 @@ jobs:
         run: |
           eas update --branch ${{ matrix.profile }} \
             --non-interactive \
-            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]"
+            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]" || { echo "EAS update failed"; exit 1; }
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📝 Write EAS update log
         if: success()
         run: |
-          echo "✅ EAS update to '${{ matrix.profile }}' at $(date)" >> eas-update-log.txt
+          echo "✅ EAS update to '${{ matrix.profile }}' at $(date)" > eas-update-log-${{ matrix.profile }}.txt
 
       - name: 📦 Upload EAS Update Log
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: eas-update-log-${{ matrix.profile }}
-          path: eas-update-log.txt
+          path: eas-update-log-${{ matrix.profile }}.txt
 
-      - name: Comment EAS Update result
+      - name: 📝 Comment EAS Update result
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && success()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
