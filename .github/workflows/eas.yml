@@ -55,7 +55,7 @@ jobs:
           echo "🔧 Mode: ${{ matrix.mode }}"
           echo "🛠️  Profile: ${{ matrix.profile }}"
 
-          if [ "${{ matrix.mode }}" = "local" ]; then
+          if [ "${{ matrix.mode }}" == "local" ]; then
             export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
             export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
             export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
@@ -119,7 +119,7 @@ jobs:
           path: eas-update-log.txt
 
       - name: Comment EAS Update result
-        if: github.event_name == 'pull_request' && success()
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && success()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
