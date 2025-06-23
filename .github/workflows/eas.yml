@@ -74,6 +74,7 @@ jobs:
         with:
           name: apk-${{ matrix.profile }}-${{ matrix.mode }}
           path: ${{ github.workspace }}/build-*.apk
+
   eas-update:
     name: EAS Update - ${{ matrix.profile }}
     runs-on: ubuntu-latest
@@ -123,6 +124,6 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
-            **EAS Update Successful** for `${{ matrix.profile }}`
-            Commit: `${{ github.sha }}`
-            [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ✅ **EAS Update Successful** for `${{ matrix.profile }}`
+            🔧 Commit: `${{ github.sha }}`
+            📄 [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
