@@ -179,15 +179,6 @@ jobs:
           fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: 🌱 Create EAS branch if it does not exist
-        if: steps.check-branch.outputs.branch_exists == 'false'
-        run: |
-          echo "Creating EAS branch '${{ matrix.profile }}'"
-          eas branch:create ${{ matrix.profile }} || { echo "Failed to create EAS branch"; exit 1; }
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
       - name: 🚀 Run EAS Update
         if: always() && (steps.check-branch.outputs.branch_exists == 'true' || steps.create-branch.conclusion == 'success')
         run: |
