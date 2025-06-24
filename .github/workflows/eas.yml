@@ -18,17 +18,17 @@ jobs:
     name: Run Tests
     runs-on: macos-latest
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🟢 Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
-      - name: 🗄️ Cache dependencies
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -37,10 +37,10 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: 🧪 Run tests
+      - name: Run tests
         run: yarn test || { echo "Tests failed"; exit 1; }
 
   eas-build:
@@ -57,17 +57,17 @@ jobs:
           - mode: remote
             profile: preview
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🟢 Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
-      - name: 🗄️ Cache dependencies
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -75,14 +75,22 @@ jobs:
             ~/.cache/yarn
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: 📥 Install EAS CLI
+      - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: 📝 Generate commit log for production
+      - name: Generate commit log for production
         if: matrix.profile == 'production'
         run: |
           echo "Generating commit log for production build"
@@ -90,7 +98,7 @@ jobs:
           git log --pretty=format:"%h - %an, %ad : %s" --date=iso -n 10 >> commit-log-production.txt
           cat commit-log-production.txt
 
-      - name: 📦 Upload commit log
+      - name: Upload commit log
         if: matrix.profile == 'production'
         uses: actions/upload-artifact@v4
         with:
@@ -100,10 +108,7 @@ jobs:
       - name: Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         id: eas-build
         run: |
-          echo "📦 Starting EAS Build"
-          echo "🔧 Mode: ${{ matrix.mode }}"
-          echo "🛠️  Profile: ${{ matrix.profile }}"
-          echo "Commit: ${{ github.sha }}"
+
           if [ "${{ matrix.mode }}" == "local" ]; then
             export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
             export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
@@ -117,7 +122,7 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📦 Upload build log
+      - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -125,7 +130,7 @@ jobs:
           path: build-log-${{ matrix.profile }}.txt
         continue-on-error: true
 
-      - name: 📤 Upload APK [${{ matrix.mode }} / ${{ matrix.profile }}]
+      - name: Upload APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         if: matrix.mode == 'local' && steps.eas-build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
@@ -133,7 +138,7 @@ jobs:
           path: ${{ github.workspace }}/build-*.apk
         continue-on-error: true
 
-      - name: 📝 Comment build failure
+      - name: Comment build failure
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.eas-build.outcome == 'failure'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
@@ -151,15 +156,15 @@ jobs:
       matrix:
         profile: [preview, production]
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
-      - name: 🗄️ Cache dependencies
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -171,10 +176,10 @@ jobs:
       - name: 📦 Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: 📥 Install EAS CLI
+      - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: 🔍 Check if EAS branch exists
+      - name: Check if EAS branch exists
         id: check-branch
         run: |
           echo "Checking if EAS branch '${{ matrix.profile }}' exists"
@@ -185,19 +190,19 @@ jobs:
           fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      - name: 🚀 Run EAS Update
+      - name: Run EAS Update
         if: always() && (steps.check-branch.outputs.branch_exists == 'true' || steps.create-branch.conclusion == 'success')
         run: |
           eas update --branch ${{ matrix.profile }} \
             --non-interactive \
-            --message "🚀 EAS update via GitHub Actions [${{ matrix.profile }}]"
+            --message " EAS update via GitHub Actions [${{ matrix.profile }}]"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 📝 Write EAS update log
+      - name: Write EAS update log
         if: success()
         run: |
-          echo "✅ EAS update to '${{ matrix.profile }}' at $(date)" > eas-update-log-${{ matrix.profile }}.txt
+          echo "EAS update to '${{ matrix.profile }}' at $(date)" > eas-update-log-${{ matrix.profile }}.txt
 
       - name: 📦 Upload EAS Update Log
         if: success()
@@ -211,7 +216,7 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
-            ✅ **EAS Update Successful** for `${{ matrix.profile }}`
-            🔧 Commit: `${{ github.sha }}`
-            📄 [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            🔗 [Build details](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
+            **EAS Update Successful** for `${{ matrix.profile }}`
+            Commit: `${{ github.sha }}`
+            [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [Build details](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
