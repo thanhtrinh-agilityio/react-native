@@ -14,11 +14,17 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
+      },
+      "cache": {
+        "key": "preview-${hash:package-lock.json}"
       }
     },
     "production": {
       "autoIncrement": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "cache": {
+        "key": "production-${hash:package-lock.json}"
+      }
     }
   },
   "submit": {
