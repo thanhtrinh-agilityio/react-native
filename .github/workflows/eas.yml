@@ -130,7 +130,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: apk-${{ matrix.profile }}-${{ matrix.mode }}
-          path: android/app/build/outputs/apk/**/*.apk
+          path: ${{ github.workspace }}/build-*.apk
         continue-on-error: true
 
       - name: 📝 Comment build failure
