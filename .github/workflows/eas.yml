@@ -157,7 +157,7 @@ jobs:
     needs: eas-build
     strategy:
       matrix:
-        profile: [preview, production]
+        profile: [preview]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -182,45 +182,17 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Check if EAS branch exists
-        id: check-branch
-        run: |
-          echo "Checking if EAS branch '${{ matrix.profile }}' exists"
-          if eas branch:list | grep -Fx "${{ matrix.profile }}"; then
-            echo "branch_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "branch_exists=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Run EAS Update
-        if: always() && (steps.check-branch.outputs.branch_exists == 'true' || steps.create-branch.conclusion == 'success')
-        run: |
-          eas update --branch ${{ matrix.profile }} \
-            --non-interactive \
-            --message "EAS update via GitHub Actions [${{ matrix.profile }}]"
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Write EAS update log
-        if: success()
-        run: |
-          echo "EAS update to '${{ matrix.profile }}' at $(date)" > eas-update-log-${{ matrix.profile }}.txt
-
-      - name: Upload EAS Update Log
-        if: success()
-        uses: actions/upload-artifact@v4
+      - name: Run EAS Preview Update
+        uses: expo/expo-github-action/preview@v8
         with:
-          name: eas-update-log-${{ matrix.profile }}
-          path: eas-update-log-${{ matrix.profile }}.txt
+          command: eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Comment EAS Update result
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && success()
+      - name: Comment Expo Preview Ready
+        if: github.event_name == 'pull_request' && matrix.profile == 'preview' && success()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
-            **EAS Update Successful** for `${{ matrix.profile }}`
-            Commit: `${{ github.sha }}`
-            [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            [Build details](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
+            **Expo Preview Ready for Testing**
+             [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview)
