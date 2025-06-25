@@ -220,7 +220,6 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
-            **EAS Update Successful** for `${{ matrix.profile }}`
-            Commit: `${{ github.sha }}`
-            [Download log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            [Build details](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
+            **Expo Preview Available** for `${{ matrix.profile }}`
+            [Open Expo Preview](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/updates)
+            Scan the QR code with the Expo Go app from your device.
