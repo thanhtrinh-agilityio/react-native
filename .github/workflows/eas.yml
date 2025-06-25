@@ -75,6 +75,7 @@ jobs:
             ~/.cache/yarn
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
+
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -108,6 +109,8 @@ jobs:
       - name: Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         id: eas-build
         run: |
+          echo "[SETUP_WORKINGDIR] Preparing workingdir for EAS local build..."
+          echo "[START_BUILD] Starting local build for profile '${{ matrix.profile }}'..."
 
           if [ "${{ matrix.mode }}" == "local" ]; then
             export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
@@ -117,7 +120,7 @@ jobs:
             export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
             eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
           else
-            eas build --platform android --non-interactive --profile ${{ matrix.profile }} --wait
+            eas build --platform android --non-interactive --profile production --wait
           fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -173,7 +176,7 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: yarn install --frozen-lockfile
 
       - name: Install EAS CLI
@@ -190,12 +193,13 @@ jobs:
           fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
       - name: Run EAS Update
         if: always() && (steps.check-branch.outputs.branch_exists == 'true' || steps.create-branch.conclusion == 'success')
         run: |
           eas update --branch ${{ matrix.profile }} \
             --non-interactive \
-            --message " EAS update via GitHub Actions [${{ matrix.profile }}]"
+            --message "EAS update via GitHub Actions [${{ matrix.profile }}]"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -204,14 +208,14 @@ jobs:
         run: |
           echo "EAS update to '${{ matrix.profile }}' at $(date)" > eas-update-log-${{ matrix.profile }}.txt
 
-      - name: 📦 Upload EAS Update Log
+      - name: Upload EAS Update Log
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: eas-update-log-${{ matrix.profile }}
           path: eas-update-log-${{ matrix.profile }}.txt
 
-      - name: 📝 Comment EAS Update result
+      - name: Comment EAS Update result
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && success()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
