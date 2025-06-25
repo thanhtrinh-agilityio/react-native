@@ -20,6 +20,7 @@
       }
     },
     "production": {
+      "environment": "production",
       "developmentClient": false,
       "autoIncrement": true,
       "distribution": "internal",
