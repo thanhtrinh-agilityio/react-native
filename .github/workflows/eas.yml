@@ -188,3 +188,11 @@ jobs:
           command: eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Comment Expo Preview Ready
+        if: github.event_name == 'pull_request' && matrix.profile == 'preview' && success()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            **Expo Preview Ready for Testing**
+             [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview)
