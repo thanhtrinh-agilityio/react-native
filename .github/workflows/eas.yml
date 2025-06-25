@@ -186,6 +186,8 @@ jobs:
         uses: expo/expo-github-action/preview@v8
         with:
           command: eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Comment Expo Preview QR
         if: github.event_name == 'pull_request' && matrix.profile == 'preview' && success()
