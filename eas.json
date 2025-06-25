@@ -11,8 +11,6 @@
     "preview": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "preview",
-      "branch": "preview",
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
