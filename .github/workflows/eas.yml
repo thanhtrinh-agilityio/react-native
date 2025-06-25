@@ -157,7 +157,7 @@ jobs:
     needs: eas-build
     strategy:
       matrix:
-        profile: [preview, production]
+        profile: [preview]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -182,44 +182,19 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Check if EAS branch exists
-        id: check-branch
-        run: |
-          echo "Checking if EAS branch '${{ matrix.profile }}' exists"
-          if eas branch:list | grep -Fx "${{ matrix.profile }}"; then
-            echo "branch_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "branch_exists=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Run EAS Update
-        if: always() && (steps.check-branch.outputs.branch_exists == 'true' || steps.create-branch.conclusion == 'success')
-        run: |
-          eas update --branch ${{ matrix.profile }} \
-            --non-interactive \
-            --message "EAS update via GitHub Actions [${{ matrix.profile }}]"
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Write EAS update log
-        if: success()
-        run: |
-          echo "EAS update to '${{ matrix.profile }}' at $(date)" > eas-update-log-${{ matrix.profile }}.txt
-
-      - name: Upload EAS Update Log
-        if: success()
-        uses: actions/upload-artifact@v4
+      - name: Run EAS Preview Update
+        uses: expo/expo-github-action/preview@v8
         with:
-          name: eas-update-log-${{ matrix.profile }}
-          path: eas-update-log-${{ matrix.profile }}.txt
+          command: eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
 
-      - name: Comment EAS Update result
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && success()
+      - name: Comment Expo Preview QR
+        if: github.event_name == 'pull_request' && matrix.profile == 'preview' && success()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
-            **Expo Preview Available** for `${{ matrix.profile }}`
-            [Open Expo Preview](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/updates)
-            Scan the QR code with the Expo Go app from your device.
+            **Expo Preview Ready**
+            Scan this QR code to test on your device:
+
+            ![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://expo.dev/preview/update?message=EAS%20update&projectId=24927fa9-514a-4db3-8f78-53a16c20e451&group=3bd5527f-2b14-4b2b-a019-57201f092c41)
+
+            [Open Preview on Expo](https://expo.dev/preview/update?message=EAS%20update&projectId=24927fa9-514a-4db3-8f78-53a16c20e451&group=3bd5527f-2b14-4b2b-a019-57201f092c41)
