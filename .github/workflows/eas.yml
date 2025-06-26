@@ -49,8 +49,8 @@ jobs:
     needs: test
     strategy:
       matrix:
-        mode: [local]
-        profile: [preview]
+        mode: [local, remote]
+        profile: [preview, production]
         exclude:
           - mode: local
             profile: production
