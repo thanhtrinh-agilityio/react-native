@@ -1,4 +1,4 @@
-name: Run Tests + EAS Matrix Build + Update
+name: Run Tests + EAS Build + Update
 
 on:
   push:
@@ -43,19 +43,12 @@ jobs:
       - name: Run tests
         run: yarn test || { echo "Tests failed"; exit 1; }
 
-  eas-build:
-    name: EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
+  eas-build-preview-local:
+    name: EAS Build - local/preview
     runs-on: ubuntu-latest
+    environment: development
     needs: test
-    strategy:
-      matrix:
-        mode: [local]
-        profile: [preview]
-        exclude:
-          - mode: local
-            profile: production
-          - mode: remote
-            profile: preview
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -76,7 +69,7 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - name: Cache Gradle packages
+      - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: |
@@ -91,73 +84,70 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Generate commit log for production
-        if: matrix.profile == 'production'
+      - name: Run EAS local build (preview)
         run: |
-          echo "Generating commit log for production build"
+          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+          eas build --platform android --local --non-interactive --profile preview --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  eas-build-production-remote:
+    name: EAS Build - remote/production
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.1
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: deps-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Generate commit log
+        run: |
           echo "Current commit: ${{ github.sha }}" > commit-log-production.txt
           git log --pretty=format:"%h - %an, %ad : %s" --date=iso -n 10 >> commit-log-production.txt
           cat commit-log-production.txt
 
-      - name: Upload commit log
-        if: matrix.profile == 'production'
+      - name: Upload Commit Log for Production
         uses: actions/upload-artifact@v4
         with:
           name: commit-log-production
           path: commit-log-production.txt
 
-      - name: Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
-        id: eas-build
-        run: |
-          echo "[SETUP_WORKINGDIR] Preparing workingdir for EAS local build..."
-          echo "[START_BUILD] Starting local build for profile '${{ matrix.profile }}'..."
-
-          if [ "${{ matrix.mode }}" == "local" ]; then
-            export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
-            export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
-            export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
-            export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
-            export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
-            eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
-          else
-            eas build --platform android --non-interactive --profile production --wait
-          fi
+      - name: Run EAS remote build (production)
+        run: eas build --platform android --non-interactive --profile production --wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log-${{ matrix.profile }}
-          path: build-log-${{ matrix.profile }}.txt
-        continue-on-error: true
-
-      - name: Upload APK [${{ matrix.mode }} / ${{ matrix.profile }}]
-        if: matrix.mode == 'local' && steps.eas-build.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: apk-${{ matrix.profile }}-${{ matrix.mode }}
-          path: ${{ github.workspace }}/build-*.apk
-        continue-on-error: true
-
-      - name: Comment build failure
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.eas-build.outcome == 'failure'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          message: |
-            ❌ **EAS Build Failed** for `${{ matrix.profile }}`
-            🔧 Commit: `${{ github.sha }}`
-            📄 [View build log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            ℹ️ Check EAS plan limits or EXPO_TOKEN permissions.
-
-  eas-update:
-    name: EAS Update - ${{ matrix.profile }}
+  eas-update-preview:
+    name: EAS Update - preview
     runs-on: ubuntu-latest
-    needs: eas-build
-    strategy:
-      matrix:
-        profile: [preview]
+    needs: eas-build-preview-local
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -182,7 +172,7 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Run EAS Preview Update
+      - name: Run EAS update
         uses: expo/expo-github-action/preview@v8
         with:
           command: eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
