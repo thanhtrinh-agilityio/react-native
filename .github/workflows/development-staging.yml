@@ -1,8 +1,8 @@
-name: Development Workflow
+name: Development + Staging Workflow
 
 on:
   pull_request:
-    branches: ['dev']
+    branches: ['dev', 'stag']
   workflow_dispatch:
 
 permissions:
@@ -15,6 +15,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: macos-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,6 +43,7 @@ jobs:
         run: yarn test || { echo "Tests failed"; exit 1; }
   lint:
     name: Run lint
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -62,6 +64,7 @@ jobs:
   eas-build-local:
     name: Build APK - local
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
     environment: development
     needs: [test, lint]
     steps:
@@ -115,3 +118,45 @@ jobs:
           name: build-apk-dev
           path: ${{ github.workspace }}/build-*.apk
         continue-on-error: true
+  eas-update-preview:
+    name: Update Expo Preview for Staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'stag'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.1
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: deps-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Run EAS update
+        uses: expo/expo-github-action/preview@v8
+        with:
+          command: eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Comment Expo Preview Ready
+        if: github.event_name == 'pull_request' && matrix.profile == 'preview' && success()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            **Expo Preview Ready for Testing**
+             [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview)
