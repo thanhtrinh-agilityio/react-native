@@ -2,7 +2,7 @@ name: Development + Staging Workflow
 
 on:
   pull_request:
-    branches: ['dev', 'stag']
+    branches: ['dev', 'stag', 'release']
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: macos-latest
-    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
         run: yarn test || { echo "Tests failed"; exit 1; }
   lint:
     name: Run lint
-    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    if: github.event_name == 'pull_request'
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -65,7 +65,7 @@ jobs:
     name: Build APK - local
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.base_ref == 'dev'
-    environment: development1
+    environment: development
     needs: [test, lint]
     steps:
       - name: Checkout repository
@@ -121,6 +121,8 @@ jobs:
   eas-update-preview:
     name: Update Expo Preview for Staging
     runs-on: ubuntu-latest
+    needs: [test, lint]
+    environment: staging
     if: github.event_name == 'pull_request' && github.base_ref == 'stag'
     steps:
       - name: Checkout repository
@@ -160,3 +162,51 @@ jobs:
           message: |
             **Expo Preview Ready for Testing**
              [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview)
+  eas-production:
+    name: Update Expo Production for Release
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    environment: production
+    if: github.event_name == 'pull_request' && github.base_ref == 'release'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.1
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: deps-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Run EAS local build Remote for Production
+        run: |
+          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+          eas build --profile production --non-interactive --message "🔄 Production update from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Comment Expo Production Ready
+        if: github.event_name == 'pull_request' && matrix.profile == 'release' && success()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            **Expo Production Ready**
+            [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
