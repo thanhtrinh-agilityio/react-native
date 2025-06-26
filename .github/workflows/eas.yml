@@ -47,6 +47,9 @@ jobs:
     name: EAS Build - ${{ matrix.mode }} - ${{ matrix.profile }}
     runs-on: ubuntu-latest
     needs: test
+    if: >
+      (github.event_name == 'pull_request' && matrix.mode == 'local' && matrix.profile == 'preview') ||
+      (github.event_name != 'pull_request' && matrix.mode == 'remote' && matrix.profile == 'production')
     strategy:
       matrix:
         mode: [local, remote]
@@ -109,8 +112,8 @@ jobs:
       - name: Build APK [${{ matrix.mode }} / ${{ matrix.profile }}]
         id: eas-build
         run: |
-          echo "[SETUP_WORKINGDIR] Preparing workingdir for EAS local build..."
-          echo "[START_BUILD] Starting local build for profile '${{ matrix.profile }}'..."
+          echo "[SETUP_WORKINGDIR] Preparing workingdir for EAS build..."
+          echo "[START_BUILD] Starting build for profile '${{ matrix.profile }}' and mode '${{ matrix.mode }}'..."
 
           if [ "${{ matrix.mode }}" == "local" ]; then
             export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
@@ -120,7 +123,7 @@ jobs:
             export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
             eas build --platform android --local --non-interactive --profile ${{ matrix.profile }} --wait
           else
-            eas build --platform android --non-interactive --profile preview --wait
+            eas build --platform android --non-interactive --profile ${{ matrix.profile }} --wait
           fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
