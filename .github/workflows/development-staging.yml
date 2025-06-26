@@ -65,7 +65,7 @@ jobs:
     name: Build APK - local
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.base_ref == 'dev'
-    environment: development
+    environment: development1
     needs: [test, lint]
     steps:
       - name: Checkout repository
