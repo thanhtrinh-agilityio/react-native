@@ -1,9 +1,4 @@
-<<<<<<< Updated upstream
-name: Development + Staging Workflow
-=======
 name: Development + Staging + Production Workflow
->>>>>>> Stashed changes
-
 on:
   pull_request:
     branches: ['dev', 'stag', 'release']
@@ -166,10 +161,6 @@ jobs:
           message: |
             **Expo Preview Ready for Testing**
              [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview)
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
   eas-production:
     name: Update Expo Production for Release
     runs-on: ubuntu-latest
