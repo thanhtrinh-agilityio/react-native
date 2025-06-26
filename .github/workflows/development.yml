@@ -1,11 +1,8 @@
 name: Development Workflow
 
 on:
-  push:
-    branches: ['dev']
   pull_request:
     branches: ['dev']
-
   workflow_dispatch:
 
 permissions:
@@ -67,7 +64,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     needs: [test, lint]
-    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
