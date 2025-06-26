@@ -46,6 +46,7 @@ jobs:
   eas-build-preview-local:
     name: EAS Build - local/preview
     runs-on: ubuntu-latest
+    environment: development
     needs: test
     if: github.event_name == 'pull_request'
     steps:
