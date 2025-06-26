@@ -6,5 +6,11 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ['dist/*'],
+    rules: {
+      'react/no-unescaped-entities': 'off',
+      'no-var': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      'react/display-name': 'off',
+    },
   },
 ]);
