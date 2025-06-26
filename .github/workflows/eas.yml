@@ -49,15 +49,18 @@ jobs:
     needs: test
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
-      - uses: actions/cache@v4
+      - name: Cache dependencies
+        uses: actions/cache@v4
         with:
           path: |
             node_modules
@@ -65,7 +68,8 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - uses: actions/cache@v4
+      - name: Cache Gradle
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -73,9 +77,11 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-      - run: npm install -g eas-cli
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       - name: Run EAS local build (preview)
         run: |
@@ -94,15 +100,18 @@ jobs:
     needs: test
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
-      - uses: actions/cache@v4
+      - name: Cache dependencies
+        uses: actions/cache@v4
         with:
           path: |
             node_modules
@@ -110,9 +119,11 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-      - run: npm install -g eas-cli
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       - name: Generate commit log
         run: |
@@ -120,7 +131,8 @@ jobs:
           git log --pretty=format:"%h - %an, %ad : %s" --date=iso -n 10 >> commit-log-production.txt
           cat commit-log-production.txt
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Commit Log for Production
+        uses: actions/upload-artifact@v4
         with:
           name: commit-log-production
           path: commit-log-production.txt
@@ -136,13 +148,16 @@ jobs:
     needs: eas-build-preview-local
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
-      - uses: actions/cache@v4
+      - name: Cache dependencies
+        uses: actions/cache@v4
         with:
           path: |
             node_modules
@@ -150,9 +165,11 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-      - run: npm install -g eas-cli
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       - name: Run EAS update
         uses: expo/expo-github-action/preview@v8
