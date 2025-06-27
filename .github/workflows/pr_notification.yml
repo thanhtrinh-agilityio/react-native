@@ -1,0 +1,23 @@
+name: Notify Slack on PR to Dev
+
+on:
+  pull_request:
+    branches: ['dev']
+    types: [opened, reopened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          PR_USER="${{ github.event.pull_request.user.login }}"
+          MESSAGE=":rocket: *New PR to \`dev\` branch*\n*Title:* ${PR_TITLE}\n*By:* ${PR_USER}\n*URL:* ${PR_URL}"
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"${MESSAGE}\"}" \
+            $SLACK_WEBHOOK_URL
