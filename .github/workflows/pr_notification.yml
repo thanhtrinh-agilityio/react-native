@@ -16,7 +16,7 @@ jobs:
           PR_TITLE="${{ github.event.pull_request.title }}"
           PR_URL="${{ github.event.pull_request.html_url }}"
           PR_USER="${{ github.event.pull_request.user.login }}"
-          CHANNEL_ID="T093C3BV3K6/C093C3C6QKW"
+          CHANNEL_ID="C093C3C6QKW"
 
           curl -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
