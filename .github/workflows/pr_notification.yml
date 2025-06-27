@@ -22,24 +22,39 @@ jobs:
           HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
           REPO_NAME="${{ github.repository }}"
           MERGED_BY="${{ github.event.pull_request.merged_by.login }}"
-          COMPARE_URL="https://github.com/${REPO_NAME}/compare/${BASE_BRANCH}...${HEAD_BRANCH}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+
+          API_URL="https://api.github.com/repos/${REPO_NAME}/pulls/${PR_NUMBER}/commits"
 
           if [[ "$ACTION" == "opened" || "$ACTION" == "reopened" ]]; then
-            MESSAGE="*PR ${ACTION} to \`${BASE_BRANCH}\`*\n*From:* \`${HEAD_BRANCH}\`\n*Title:* ${PR_TITLE}\n*By:* ${PR_USER}\n🔗 ${PR_URL}"
+            HEADER=" *${PR_USER}* ${ACTION} branch \`${HEAD_BRANCH}\` into \`${BASE_BRANCH}\` of \`${REPO_NAME}\`"
+            COMPARE_LINK="Compare changes: ${PR_URL}"
+
+            COMMIT_LIST=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$API_URL" \
+              | jq -r '.[] | "• \(.sha[0:8]): \(.commit.message | split("\n")[0]) - \(.commit.author.name)"')
 
           elif [[ "$ACTION" == "closed" && "$IS_MERGED" == "true" ]]; then
-            # Fetch commits in merged PR
-            COMMITS=$(echo '${{ toJson(github.event.pull_request.commits) }}' | jq -r '.[]? | "• \(.id[0:8]): \(.message | split("\n")[0]) - \(.author.name)"')
-            if [ -z "$COMMITS" ]; then
-              COMMITS="(No commits found)"
-            fi
+            HEADER=" *${MERGED_BY}* merged branch \`${HEAD_BRANCH}\` into \`${BASE_BRANCH}\` of \`${REPO_NAME}\`"
+            COMPARE_LINK=" Compare changes: ${PR_URL}"
 
-            MESSAGE="*${MERGED_BY}* merged branch \`${HEAD_BRANCH}\` into \`${BASE_BRANCH}\` of \`${REPO_NAME}\`\n Compare changes: ${PR_URL}\n\n${COMMITS}"
+            COMMIT_LIST=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$API_URL" \
+              | jq -r '.[] | "• \(.sha[0:8]): \(.commit.message | split("\n")[0]) - \(.commit.author.name)"')
+
+          elif [[ "$ACTION" == "closed" && "$IS_MERGED" != "true" ]]; then
+            HEADER="*${PR_USER}* closed PR from \`${HEAD_BRANCH}\` to \`${BASE_BRANCH}\` in \`${REPO_NAME}\`"
+            COMPARE_LINK=" ${PR_URL}"
+            COMMIT_LIST=""
 
           else
-            echo "PR closed without merge. Skipping Slack notification."
+            echo "No notification needed for this action."
             exit 0
           fi
+
+          if [ -z "$COMMIT_LIST" ]; then
+            COMMIT_LIST="(No commits or not accessible)"
+          fi
+
+          MESSAGE="${HEADER}\n${COMPARE_LINK}\n\n${COMMIT_LIST}"
 
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"${MESSAGE}\"}" \
