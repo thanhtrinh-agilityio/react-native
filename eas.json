@@ -9,6 +9,7 @@
       "distribution": "internal"
     },
     "preview": {
+      "channel": "preview",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -20,6 +21,8 @@
       }
     },
     "production": {
+      "environment": "production",
+      "developmentClient": false,
       "autoIncrement": true,
       "distribution": "internal",
       "cache": {
