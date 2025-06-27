@@ -1,4 +1,5 @@
 name: Development + Staging + Production Workflow
+
 on:
   pull_request:
     branches: ['dev', 'stag', 'release']
@@ -16,13 +17,11 @@ jobs:
     runs-on: macos-latest
     if: github.event_name == 'pull_request'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
@@ -35,45 +34,55 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
+      - run: yarn install --frozen-lockfile
+      - run: yarn test
 
-      - name: Run tests
-        run: yarn test || { echo "Tests failed"; exit 1; }
   lint:
-    name: Run lint
+    name: Run Lint
     if: github.event_name == 'pull_request'
     runs-on: macos-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
 
-      - name: Run lint
-        run: yarn lint || { echo "Linting failed"; exit 1; }
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
 
-  eas-build-local:
-    name: Build APK - local
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
-    environment: development
+  eas:
+    name: EAS Build or Update (${{ matrix.env }})
     needs: [test, lint]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    strategy:
+      matrix:
+        include:
+          - env: dev
+            ref: dev
+            type: build
+            profile: preview
+            build_type: local
+          - env: stag
+            ref: stag
+            type: update
+            profile: preview
+            branch: preview
+          - env: release
+            ref: release
+            type: build
+            profile: production
+            build_type: remote
+    environment: ${{ matrix.env }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20.18.1
 
@@ -86,126 +95,38 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: deps-${{ runner.os }}-
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: gradle-${{ runner.os }}-
+      - run: yarn install --frozen-lockfile
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
+      - run: npm install -g eas-cli
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Run EAS local build for Android
+      - name: Run EAS ${{ matrix.type }}
+        if: github.base_ref == matrix.ref
         run: |
           export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
           export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
           export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
           export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
           export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
-          eas build --platform android --local --non-interactive --profile preview --wait
+          if [ "${{ matrix.type }}" = "build" ]; then
+            eas build --platform android $([ "${{ matrix.build_type }}" = "local" ] && echo "--local") --non-interactive --profile ${{ matrix.profile }} --wait
+          else
+            eas update --branch ${{ matrix.branch }} --non-interactive --message "🔄 Update from CI"
+          fi
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      - name: Upload file APK for Development
+
+      - name: Upload APK (only for dev)
+        if: matrix.env == 'dev'
         uses: actions/upload-artifact@v4
         with:
           name: build-apk-dev
           path: ${{ github.workspace }}/build-*.apk
         continue-on-error: true
-  eas-update-preview:
-    name: Update Expo Preview for Staging
-    runs-on: ubuntu-latest
-    needs: [test, lint]
-    environment: staging
-    if: github.event_name == 'pull_request' && github.base_ref == 'stag'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.18.1
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.cache/yarn
-          key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-          restore-keys: deps-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Run EAS update
-        uses: expo/expo-github-action/preview@v8
-        with:
-          command: eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Comment Expo Preview Ready
-        if: github.event_name == 'pull_request' && matrix.profile == 'preview' && success()
+      - name: Comment PR with Expo Link
+        if: success()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
-            **Expo Preview Ready for Testing**
-             [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview)
-  eas-production:
-    name: Update Expo Production for Release
-    runs-on: ubuntu-latest
-    needs: [test, lint]
-    environment: production
-    if: github.event_name == 'pull_request' && github.base_ref == 'release'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.18.1
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.cache/yarn
-          key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
-          restore-keys: deps-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Run EAS local build Remote for Production
-        run: |
-          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
-          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
-          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
-          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
-          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
-          eas build --platform android --profile production --non-interactive --message "🔄 Production update from CI"
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Comment Expo Production Ready
-        if: github.event_name == 'pull_request' && matrix.profile == 'release' && success()
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          message: |
-            **Expo Production Ready**
-            [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
+            **Expo ${{ matrix.env == 'release' && 'Production' || 'Preview' }} Ready**
+            [Open in Expo Go](${{ matrix.env == 'release' && 'https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds' || 'https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview' }})
