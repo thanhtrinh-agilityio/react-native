@@ -3,7 +3,7 @@ name: Notify Slack on PR to Dev
 on:
   pull_request:
     branches: ['dev', 'stag', 'release']
-    types: [opened, reopened]
+    types: [opened, reopened, closed]
 
 jobs:
   notify:
