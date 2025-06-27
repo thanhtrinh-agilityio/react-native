@@ -1,0 +1,61 @@
+name: Notify Slack on PR Events
+
+on:
+  pull_request:
+    branches: ['dev', 'stag', 'release']
+    types: [opened, reopened, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          ACTION="${{ github.event.action }}"
+          IS_MERGED="${{ github.event.pull_request.merged }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          PR_USER="${{ github.event.pull_request.user.login }}"
+          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+          HEAD_BRANCH="${{ github.event.pull_request.head.ref }}"
+          REPO_NAME="${{ github.repository }}"
+          MERGED_BY="${{ github.event.pull_request.merged_by.login }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+
+          API_URL="https://api.github.com/repos/${REPO_NAME}/pulls/${PR_NUMBER}/commits"
+
+          if [[ "$ACTION" == "opened" || "$ACTION" == "reopened" ]]; then
+            HEADER=" *${PR_USER}* ${ACTION} branch \`${HEAD_BRANCH}\` into \`${BASE_BRANCH}\` of \`${REPO_NAME}\`"
+            COMPARE_LINK="Compare changes: ${PR_URL}"
+
+            COMMIT_LIST=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$API_URL" \
+              | jq -r '.[] | "• \(.sha[0:8]): \(.commit.message | split("\n")[0]) - \(.commit.author.name)"')
+
+          elif [[ "$ACTION" == "closed" && "$IS_MERGED" == "true" ]]; then
+            HEADER=" *${MERGED_BY}* merged branch \`${HEAD_BRANCH}\` into \`${BASE_BRANCH}\` of \`${REPO_NAME}\`"
+            COMPARE_LINK=" Compare changes: ${PR_URL}"
+
+            COMMIT_LIST=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$API_URL" \
+              | jq -r '.[] | "• \(.sha[0:8]): \(.commit.message | split("\n")[0]) - \(.commit.author.name)"')
+
+          elif [[ "$ACTION" == "closed" && "$IS_MERGED" != "true" ]]; then
+            HEADER="*${PR_USER}* closed PR from \`${HEAD_BRANCH}\` to \`${BASE_BRANCH}\` in \`${REPO_NAME}\`"
+            COMPARE_LINK=" ${PR_URL}"
+            COMMIT_LIST=""
+
+          else
+            echo "No notification needed for this action."
+            exit 0
+          fi
+
+          if [ -z "$COMMIT_LIST" ]; then
+            COMMIT_LIST="(No commits or not accessible)"
+          fi
+
+          MESSAGE="${HEADER}\n${COMPARE_LINK}\n\n${COMMIT_LIST}"
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"${MESSAGE}\"}" \
+            $SLACK_WEBHOOK_URL
