@@ -23,5 +23,5 @@ jobs:
             -H "Content-type: application/json" \
             --data "{
               \"channel\":\"$CHANNEL_ID\",
-              \"text\":\":rocket: New PR to *dev* branch\n*Title:* $PR_TITLE\n*By:* $PR_USER\n*URL:* $PR_URL\"
+              \"text\":\":rocket: New PR to  ${{github.base_ref}} branch\n*Title:* $PR_TITLE\n*By:* $PR_USER\n*URL:* $PR_URL\"
             }"
