@@ -13,13 +13,14 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          PR_ACTION="${{ github.event.action }}"
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_URL="${{ github.event.pull_request.html_url }}"
-          PR_USER="${{ github.event.pull_request.user.login }}"
-          PR_BASE="${{ github.event.pull_request.base.ref }}"
-          PR_HEAD="${{ github.event.pull_request.head.ref }}"
-          MESSAGE="*PR \`${PR_ACTION}\` to \`${PR_BASE}\`*\n*From:* \`${PR_HEAD}\`\n*Title:* ${PR_TITLE}\n*By:* ${PR_USER}\n*URL:* ${PR_URL}"
+          AUTHOR_NAME="${{ github.actor }}"
+          REPO_NAME="${{ github.repository }}"
+          BRANCH_NAME="${GITHUB_REF_NAME}"
+          COMPARE_URL="${{ github.event.compare }}"
+
+          COMMITS=$(echo '${{ toJson(github.event.commits) }}' | jq -r '.[] | "• \(.id[0:8]): \(.message) - \(.author.name)"')
+
+          MESSAGE="*${AUTHOR_NAME}* pushed to branch \`${BRANCH_NAME}\` of \`${REPO_NAME}\`\n [Compare changes](${COMPARE_URL})\n\n${COMMITS}"
 
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"${MESSAGE}\"}" \
