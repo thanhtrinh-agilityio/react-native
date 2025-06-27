@@ -1,15 +1,15 @@
-name: Notify Slack on PR to Dev
+name: Notify Slack on Push
 
 on:
-  pull_request:
-    branches: ['dev', 'stag', 'release']
-    types: [opened, reopened, closed]
+  push:
+    branches:
+      - '**'
 
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Send notification to Slack
+      - name: Send Slack notification on push
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
@@ -18,9 +18,13 @@ jobs:
           BRANCH_NAME="${GITHUB_REF_NAME}"
           COMPARE_URL="${{ github.event.compare }}"
 
-          COMMITS=$(echo '${{ toJson(github.event.commits) }}' | jq -r '.[] | "• \(.id[0:8]): \(.message) - \(.author.name)"')
+          COMMITS=$(echo '${{ toJson(github.event.commits) }}' | jq -r '.[] | "• \(.id[0:8]): \(.message | split("\n")[0]) - \(.author.name)"')
 
-          MESSAGE="*${AUTHOR_NAME}* pushed to branch \`${BRANCH_NAME}\` of \`${REPO_NAME}\`\n [Compare changes](${COMPARE_URL})\n\n${COMMITS}"
+          if [ -z "$COMMITS" ]; then
+            COMMITS="(No commits in this push)"
+          fi
+
+          MESSAGE="📦 *${AUTHOR_NAME}* pushed to branch \`${BRANCH_NAME}\` of \`${REPO_NAME}\`\n🔍 [Compare changes](${COMPARE_URL})\n\n${COMMITS}"
 
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"${MESSAGE}\"}" \
