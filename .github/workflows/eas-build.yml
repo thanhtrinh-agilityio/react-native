@@ -1,0 +1,154 @@
+name: Dev + Staging + Production Workflow
+
+on:
+  pull_request:
+    branches: ['dev', 'stag', 'release']
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+  checks: write
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20.18.1 }
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.cache/yarn
+          key: deps-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn test
+
+  lint:
+    name: Run Lint
+    if: github.event_name == 'pull_request'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20.18.1 }
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+
+  build-dev:
+    name: Build Local APK (Dev)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    environment: development
+    needs: [test, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20.18.1 }
+
+      - run: yarn install --frozen-lockfile
+      - run: npm install -g eas-cli
+
+      - name: Run EAS local build
+        run: |
+          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+          eas build --platform android --local --non-interactive --profile preview --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-apk-dev
+          path: ${{ github.workspace }}/build-*.apk
+        continue-on-error: true
+
+  update-preview:
+    name: Expo Update Preview (Staging)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'stag'
+    environment: staging
+    needs: [test, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20.18.1 }
+
+      - run: yarn install --frozen-lockfile
+      - run: npm install -g eas-cli
+
+      - name: Run EAS Update
+        run: |
+          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+          eas update --branch preview --non-interactive --message "🔄 Preview update from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Run EAS Preview Build
+        run: |
+          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+          eas build --platform android --profile preview --non-interactive --message "📦 Preview build from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Comment Expo Preview Ready
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            **Expo Preview Ready**
+            [Open in Expo Go](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/branches/preview)
+
+  build-release:
+    name: Build Remote APK (Release)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.base_ref == 'release'
+    environment: production
+    needs: [test, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20.18.1 }
+
+      - run: yarn install --frozen-lockfile
+      - run: npm install -g eas-cli
+
+      - name: Run EAS Remote Build
+        run: |
+          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
+          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
+          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
+          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
+          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
+          eas build --platform android --profile production --non-interactive --message "Production update from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Comment Production Build Ready
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            **Expo Production Build Started**
+            [Track builds](https://expo.dev/accounts/thanh.trinh-agilityo/projects/rak-gpt/builds)
