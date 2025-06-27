@@ -1,4 +1,4 @@
-name: Notify via Slack Bot
+name: Notify Slack on PR to Dev
 
 on:
   pull_request:
@@ -9,19 +9,15 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify Slack via Bot
+      - name: Send notification to Slack
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
           PR_URL="${{ github.event.pull_request.html_url }}"
           PR_USER="${{ github.event.pull_request.user.login }}"
-          CHANNEL_ID="C093C3C6QKW"
+          MESSAGE=":rocket: *New PR to ${{ github.event.pull_request.base.ref}} branch*\n*Title:* ${PR_TITLE}\n*By:* ${PR_USER}\n*URL:* ${PR_URL}"
 
-          curl -X POST https://slack.com/api/chat.postMessage \
-            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-            -H "Content-type: application/json" \
-            --data "{
-              \"channel\":\"$CHANNEL_ID\",
-              \"text\":\":rocket: New PR to  ${{github.base_ref}} branch\n*Title:* $PR_TITLE\n*By:* $PR_USER\n*URL:* $PR_URL\"
-            }"
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"${MESSAGE}\"}" \
+            $SLACK_WEBHOOK_URL
