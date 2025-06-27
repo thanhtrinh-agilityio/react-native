@@ -16,7 +16,10 @@ jobs:
           PR_TITLE="${{ github.event.pull_request.title }}"
           PR_URL="${{ github.event.pull_request.html_url }}"
           PR_USER="${{ github.event.pull_request.user.login }}"
-          MESSAGE=":rocket: *New PR to ${{ github.event.pull_request.base.ref}} branch*\n*Title:* ${PR_TITLE}\n*By:* ${PR_USER}\n*URL:* ${PR_URL}"
+          PR_BASE="${{ github.event.pull_request.base.ref }}"   # target branch
+          PR_HEAD="${{ github.event.pull_request.head.ref }}"   # source branch (created PR from)
+
+          MESSAGE=":rocket: *New PR to \`${PR_BASE}\` branch*\n*From:* \`${PR_HEAD}\`\n*Title:* ${PR_TITLE}\n*By:* ${PR_USER}\n*URL:* ${PR_URL}"
 
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\":\"${MESSAGE}\"}" \
