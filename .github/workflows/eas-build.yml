@@ -54,7 +54,7 @@ jobs:
   build-dev:
     name: Build Local APK (Dev)
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     environment: development
     needs: [test, lint]
     steps:
@@ -86,7 +86,7 @@ jobs:
   update-preview:
     name: Expo Update Preview (Staging)
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/stag'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stag'
     environment: staging
     needs: [test, lint]
     steps:
@@ -115,7 +115,7 @@ jobs:
   build-release:
     name: Build Remote APK (Release)
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/release'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
     environment: production
     needs: [test, lint]
     steps:
