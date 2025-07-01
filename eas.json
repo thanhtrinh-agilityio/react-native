@@ -10,6 +10,7 @@
     },
     "preview": {
       "channel": "preview",
+      "environment": "preview",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -21,6 +22,8 @@
       }
     },
     "production": {
+      "channel": "production",
+      "environment": "production",
       "developmentClient": false,
       "autoIncrement": true,
       "distribution": "internal",
