@@ -15,7 +15,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: macos-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' ||  github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
