@@ -20,7 +20,6 @@ jobs:
   test:
     name: Run Tests
     runs-on: macos-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -42,7 +41,6 @@ jobs:
   lint:
     name: Run Lint
     runs-on: macos-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -104,6 +102,8 @@ jobs:
 
       - name: Run EAS Preview Build
         run: eas build --platform android --profile preview --non-interactive --message "Preview build from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Comment Expo Preview Ready
         uses: marocchino/sticky-pull-request-comment@v2
