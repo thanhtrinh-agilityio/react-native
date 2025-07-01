@@ -103,6 +103,8 @@ jobs:
 
       - name: Run EAS Preview Build
         run: eas build --platform android --profile preview --non-interactive --message "Preview build from CI"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Comment Expo Preview Ready
         uses: marocchino/sticky-pull-request-comment@v2
