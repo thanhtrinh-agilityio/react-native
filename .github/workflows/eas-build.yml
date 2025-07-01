@@ -46,17 +46,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
+
       - uses: actions/setup-node@v4
         with: { node-version: 20.18.1 }
+
       - run: yarn install --frozen-lockfile
       - run: yarn lint
 
   build-dev:
     name: Build Local APK (Dev)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    if: github.ref_name == 'dev'
     environment: development
-    needs: [test, lint]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -86,9 +87,8 @@ jobs:
   update-preview:
     name: Expo Update Preview (Staging)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/stag'
+    if: github.ref_name == 'stag'
     environment: staging
-    needs: [test, lint]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -115,9 +115,8 @@ jobs:
   build-release:
     name: Build Remote APK (Release)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+    if: github.ref_name == 'release'
     environment: production
-    needs: [test, lint]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
