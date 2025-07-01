@@ -136,15 +136,14 @@ jobs:
       - run: npm install -g eas-cli
 
       - name: Run EAS Remote Build
-        run: |
-          export EXPO_PUBLIC_OPENROUTER_API_KEY="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}"
-          export EXPO_PUBLIC_OPENROUTER_MODEL="${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}"
-          export EXPO_PUBLIC_OPENROUTER_API_URL="${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}"
-          export EXPO_PUBLIC_OPENROUTER_TITLE="${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}"
-          export EXPO_PUBLIC_STORYBOOK_ENABLED="${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}"
-          eas build --platform android --profile production --non-interactive --message "Production update from CI"
+        run: eas build --platform android --profile production --non-interactive --message "Production update from CI"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
+          EXPO_PUBLIC_OPENROUTER_MODEL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_MODEL }}
+          EXPO_PUBLIC_OPENROUTER_API_URL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_URL }}
+          EXPO_PUBLIC_OPENROUTER_TITLE: ${{ secrets.EXPO_PUBLIC_OPENROUTER_TITLE }}
+          EXPO_PUBLIC_STORYBOOK_ENABLED: ${{ secrets.EXPO_PUBLIC_STORYBOOK_ENABLED }}
 
       - name: Comment Production Build Ready
         uses: marocchino/sticky-pull-request-comment@v2
