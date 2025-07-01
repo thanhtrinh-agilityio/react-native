@@ -3,6 +3,11 @@ name: Dev + Staging + Production Workflow
 on:
   pull_request:
     branches: ['dev', 'stag', 'release']
+  push:
+    branches:
+      - dev
+      - stag
+      - release
   workflow_dispatch:
 
 permissions:
@@ -36,8 +41,8 @@ jobs:
 
   lint:
     name: Run Lint
-    if: github.event_name == 'pull_request'
     runs-on: macos-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -49,7 +54,7 @@ jobs:
   build-dev:
     name: Build Local APK (Dev)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.base_ref == 'dev'
+    if: github.ref == 'refs/heads/dev'
     environment: development
     needs: [test, lint]
     steps:
@@ -81,7 +86,7 @@ jobs:
   update-preview:
     name: Expo Update Preview (Staging)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.base_ref == 'stag'
+    if: github.ref == 'refs/heads/stag'
     environment: staging
     needs: [test, lint]
     steps:
@@ -110,7 +115,7 @@ jobs:
   build-release:
     name: Build Remote APK (Release)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.base_ref == 'release'
+    if: github.ref == 'refs/heads/release'
     environment: production
     needs: [test, lint]
     steps:
